@@ -89,9 +89,9 @@ module initial
       !choose the correct setup routine based on the value of initf in run.in
       select case(initf)
         case('single_loop')
-          call setup_single_loop !initial_loop.mod
+          call setup_single_loop !initial_cond.mod
         case('random_loops')
-          call setup_random_loops !initial_loop.mod
+          call setup_random_loops !initial_cond.mod
         case default
           call fatal_error('cdata.mod:init_setup', &
                          'invalid choice for initf parameter') !cdata.mod
