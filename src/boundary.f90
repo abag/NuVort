@@ -27,12 +27,27 @@ module boundary
     implicit none
     integer, intent(IN) :: i
     real :: ginfront(3), gbehind(3)
+    real :: r_tmp
     if (f(i)%pinnedi) then
-      ginfront(:)=f(f(i)%behind)%x(:)+2*abs(f(i)%wpinned)*(0.5*f(i)%wpinned*box_size-f(f(i)%behind)%x(:))
+      if (sum(abs(f(i)%wpinned))==2) then
+        !spherical reflection
+        r_tmp=get_radius(f(f(i)%behind)%x)
+        ginfront(:)=f(f(i)%behind)%x*(2*cylind_r-r_tmp)/r_tmp
+      else if (sum(abs(f(i)%wpinned))==1) then
+        !cartesian reflection
+        ginfront(:)=f(f(i)%behind)%x(:)+2*abs(f(i)%wpinned)*(0.5*f(i)%wpinned*box_size-f(f(i)%behind)%x(:))
+      end if
       gbehind(:)=f(f(i)%behind)%x(:)
     else if (f(i)%pinnedb) then
       ginfront(:)=f(f(i)%infront)%x(:)
-      gbehind(:)=f(f(i)%infront)%x(:)+2*abs(f(i)%wpinned)*(0.5*f(i)%wpinned*box_size-f(f(i)%infront)%x(:))
+      if (sum(abs(f(i)%wpinned))==2) then 
+        !spherical reflection
+        r_tmp=get_radius(f(f(i)%infront)%x)
+        ginfront(:)=f(f(i)%infront)%x*(2*cylind_r-r_tmp)/r_tmp
+      else if (sum(abs(f(i)%wpinned))==1) then
+        !cartesian reflection
+        gbehind(:)=f(f(i)%infront)%x(:)+2*abs(f(i)%wpinned)*(0.5*f(i)%wpinned*box_size-f(f(i)%infront)%x(:))
+      end if
     else
       ginfront(:)=f(f(i)%infront)%x(:)
       gbehind(:)=f(f(i)%behind)%x(:)
@@ -87,6 +102,7 @@ module boundary
   !>routine simply resets the position.
   subroutine enforce_boundary()
     implicit none
+    real :: theta_store
     integer :: i
     integer :: pinned_component
     !$omp parallel do private(i)
@@ -119,14 +135,22 @@ module boundary
       !----------solid boundaries----------
       if (f(i)%pinnedi.or.f(i)%pinnedb) then
         !set the particle position back to the boundary 
-        !we use maxloc to find out if the particle is either
-        !on the x,y or z boundaries
-        pinned_component=maxloc(abs(f(i)%wpinned),1)
-        !enforcing zero flux at boundaries
-        if (f(i)%wpinned(pinned_component)>0) then
-          f(i)%x(pinned_component)=0.5*box_size
-        else if (f(i)%wpinned(pinned_component)<0) then
-          f(i)%x(pinned_component)=-0.5*box_size
+        if (sum(abs(f(i)%wpinned))==2) then
+          !is this particle 
+          theta_store=atan2(f(i)%x(2),f(i)%x(1))
+          !set the radius to be cylind_r
+          f(i)%x(1)=cylind_r*cos(theta_store)
+          f(i)%x(2)=cylind_r*sin(theta_store)
+        else if (sum(abs(f(i)%wpinned))==1) then
+          !we use maxloc to find out if the particle is either
+          !on the x,y or z boundaries
+          pinned_component=maxloc(abs(f(i)%wpinned),1)
+          !enforcing zero flux at boundaries
+          if (f(i)%wpinned(pinned_component)>0) then
+            f(i)%x(pinned_component)=0.5*box_size
+          else if (f(i)%wpinned(pinned_component)<0) then
+            f(i)%x(pinned_component)=-0.5*box_size
+          end if
         end if
       end if
     end do

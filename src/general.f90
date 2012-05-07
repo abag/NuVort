@@ -62,6 +62,14 @@ module general
                 (a(3)-b(3))**2
   end function
   !*********************************************************************
+  !>calculate the magnitude of the radial component of cartesian vector 
+  real function get_radius(a)
+    use Cdata
+    implicit none
+    real, dimension(3), intent(IN) :: a
+    get_radius=sqrt(a(1)**2+a(2)**2)
+  end function
+  !*********************************************************************
   !>calculate the angle between vectors \f$\mathbf{a}\f$ and  \f$\mathbf{b}\f$
   !!\f[ \theta=\cos^{-1} \frac{ \mathbf{a} \cdot \mathbf{b}}{ab} \f]
   real function vector_angle(a,b)

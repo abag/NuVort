@@ -11,6 +11,7 @@ module output
     open(unit=77,file='./data/dims.log',status='replace')
       write(77,*) delta, '%resolution - \delta' 
       write(77,*) box_size, '%box size'
+      write(77,*) cylind_r, '%radius of cylinder'
     close(77)
   end subroutine
   !**********************************************************************

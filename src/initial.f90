@@ -45,6 +45,20 @@ module initial
         case('solid')
           write(*,'(a)') ' boundary x: solid'
           n_mirror=n_mirror+1
+        case('cylind')
+          !check the y boundary is also set to cylinder
+          if (boundary_y/='cylind') call fatal_error('init_setup:',&
+          'boundary_y must also be set to cylind')
+          !now check that the cylinder radius has been set
+          if (cylind_r>epsilon(0.)) then 
+            write(*,'(a)') ' boundary x/y: running with cylindrical boundary'
+            write(*,'(a,f9.4)') ' radius of cylinder: ', cylind_r
+            !to speed up logical evaluations if we are running with cylindrical 
+            !boundaries we activate the following logical variable
+            cylindrical_boundaries=.true.
+          else
+            call fatal_error('init_setup:', 'cylinder radius not set')
+          end if
         case default
           call fatal_error('init_setup:', 'incorrect boundary_x parameter')
       end select
@@ -57,8 +71,12 @@ module initial
         case('solid')
           write(*,'(a)') ' boundary y: solid'
           n_mirror=n_mirror+1
+        case('cylind')
+          !check the x boundary is also set to cylinder
+          if (boundary_x/='cylind') call fatal_error('init_setup:',&
+          'boundary_x must also be set to cylind')
         case default
-          call fatal_error('init_setup:', 'incorrect boundary_x parameter')
+          call fatal_error('init_setup:', 'incorrect boundary_y parameter')
       end select
       select case(boundary_z)
         case('periodic')
@@ -70,7 +88,7 @@ module initial
           write(*,'(a)') ' boundary z: solid'
           n_mirror=n_mirror+1
         case default
-          call fatal_error('init_setup:', 'incorrect boundary_x parameter')
+          call fatal_error('init_setup:', 'incorrect boundary_z parameter')
       end select
       !now create the periodic_loop_array
       call create_periodic_loop_array !boundary.mod
@@ -92,6 +110,8 @@ module initial
           call setup_single_loop !initial_loop.mod
         case('random_loops')
           call setup_random_loops !initial_loop.mod
+        case('half_loop')
+          call setup_half_loop !initial_loop.mod
         case default
           call fatal_error('cdata.mod:init_setup', &
                          'invalid choice for initf parameter') !cdata.mod
@@ -147,6 +167,7 @@ module initial
       write(*,*) 'restored vortex filament'
     close(63)
     write(*,*) 'data read in from dump file at t=', t
+    nstart=dummy_itime+1
   end subroutine
   !****************************************************************
   !> check the timestep is OK if we have a vortex filament only

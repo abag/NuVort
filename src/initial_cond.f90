@@ -21,7 +21,7 @@ module initial_cond
     !loop over particles setting spatial and 'loop' position
     do i=1, pcount
       f(i)%x(1)=radius*sin(pi*real(2*i-1)/pcount)
-      f(i)%x(2)=radius*cos(pi*real(2*i-1)/pcount)
+      f(i)%x(2)=radius*cos(pi*real(2*i-1)/pcount)+box_size/2
       f(i)%x(3)=0.
       if (i==1) then
         f(i)%behind=pcount ; f(i)%infront=i+1
@@ -34,6 +34,39 @@ module initial_cond
       f(i)%u1=0. ; f(i)%u2=0.
     end do   
   end subroutine
+  !*************************************************************************
+   !>set up a half loop at the x-y plane touching the solid boundary at x=BoxSize/2,
+   !>it's size is dictated by the initial number of particles set and the size of \f$\delta\f$
+   !>RISTO's first attemp to make a new initial condition.
+   subroutine setup_half_loop
+     implicit none
+     real :: velocity, ring_energy
+     real :: radius
+     integer :: i
+     radius=(0.75*pcount*delta)/pi !75% of potential size
+     velocity=(quant_circ/(4*pi*radius))*(log(8*radius/corea)-.5)
+     ring_energy=0.5*(quant_circ**2)*radius*(log(8*radius/corea)-2.)
+     write(*,*) 'initf: half loop, radius of loop:', radius
+     write(*,*) 'velocity should be:', velocity
+     write(*,*) 'energy should be:', ring_energy
+     !loop over particles setting spatial and 'loop' position
+     do i=1, pcount
+       f(i)%x(1)=0.5*box_size-radius*sin(pi*real(i-1)/(pcount-1))
+       f(i)%x(2)=radius*cos(pi*real(i-1)/(pcount-1))
+       f(i)%x(3)=0.
+       if (i==1) then
+         f(i)%pinnedb=.true. ; f(i)%behind=i ; f(i)%wpinned=(/1,0,0/)
+         f(i)%infront=i+1
+       else if (i==pcount) then
+        f(i)%pinnedi=.true. ; f(i)%infront=i ; f(i)%wpinned=(/1,0,0/)
+        f(i)%behind=i-1
+       else
+         f(i)%behind=i-1 ; f(i)%infront=i+1
+       end if
+       !zero the stored velocities
+       f(i)%u1=0. ; f(i)%u2=0.
+     end do
+   end subroutine
   !*************************************************************************
   subroutine setup_random_loops
     implicit none

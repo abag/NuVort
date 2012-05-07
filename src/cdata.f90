@@ -71,7 +71,7 @@ module cdata
   real, protected ::  delta
   !>timestep
   real :: dt
-  real, protected :: box_size=0.
+  real, protected :: box_size=0., cylind_r=0.
   real, protected :: quant_circ=9.97E-4 !He-4 by default
   real , protected :: corea=8.244023E-9 !He-4 by default
   !>are boundaries periodic, open or solid?  
@@ -82,6 +82,7 @@ module cdata
   integer, allocatable :: periodic_loop_array(:,:)
   integer :: n_mirror=0 !number of solid dimensions
   integer, allocatable :: mirror_loop_array(:,:)
+  logical :: cylindrical_boundaries=.false. !used if we have cylindrical boundaries
   !key arguements that must be set
   character(len=30), protected :: velocity, initf, boundary
   !order of derivatives
@@ -163,6 +164,8 @@ module cdata
           case ('box_size')
              !size of box must be>0, real number
              read(buffer, *, iostat=ios) box_size !size of periodic box
+          case ('cylind_r')
+             read(buffer, *, iostat=ios) cylind_r !radius of cylinder
           case ('velocity')
              !velocity field options are LIA, BS, Tree
              read(buffer, *, iostat=ios) velocity !BS/LIA/Tree
