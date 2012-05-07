@@ -201,7 +201,10 @@ module timestep
       if (f(j)%infront==0) cycle
       if (f(j)%pinnedi) cycle!ignore vorex segment which goes into the wall
       !if pinned behind do not take the contribution from your own image as it 
-      if ((f(i)%pinnedb).and.(i==j)) cycle!has already been used in the local part
+      if ((sum(f(i)%wpinned-reflect)==0).and.(sum(f(i)%wpinned)<2)) then
+        if ((f(i)%pinnedb).and.(i==j)) cycle!has already been used in the local part
+        if ((f(i)%pinnedi).and.(j==f(i)%behind)) cycle!has already been used in the local part
+      end if
       !we now create dummy variables reflecting f(j)%x and f(j)%ghosti in the required
       !axis and storing the results in s_img, s_gi_img respectively
       s_gi_img=f(j)%x+2*abs(reflect)*(0.5*reflect*box_size-f(j)%x)
