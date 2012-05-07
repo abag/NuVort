@@ -1,18 +1,18 @@
 --------------required parameters------------
 nsteps 100000
 shots 10
-pcount 5000
-dt 1E-3
-delta 0.01
+pcount 100
+dt 1E-4
+delta 0.005
 box_size 0.4
-velocity Tree
-initf random_loops
+velocity LIA
+initf half_loop
 scaling_factor .8
-rotation_factor 1.
-line_count 500
+rotation_factor .5
+line_count 1
 boundary_x solid
-boundary_y solid
-boundary_z solid
+boundary_y periodic
+boundary_z periodic
 --------------optional parameters------------
 ---delete all below for a 'standard' run-----
 tree_theta 0.4

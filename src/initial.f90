@@ -107,7 +107,7 @@ module initial
       !choose the correct setup routine based on the value of initf in run.in
       select case(initf)
         case('single_loop')
-          call setup_single_loop !initial_loop.mod
+          call setup_single_loop !initial_cond.mod
         case('random_loops')
           call setup_random_loops !initial_loop.mod
         case('half_loop')
