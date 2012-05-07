@@ -43,6 +43,9 @@ module initial_cond
      real :: velocity, ring_energy
      real :: radius
      integer :: i
+     !check the boundary conditions are OK
+     if (boundary_x/='solid') call fatal_error('init_cond:',&
+     'need solid x boundary for this initial condition')
      radius=(0.75*pcount*delta)/pi !75% of potential size
      velocity=(quant_circ/(4*pi*radius))*(log(8*radius/corea)-.5)
      ring_energy=0.5*(quant_circ**2)*radius*(log(8*radius/corea)-2.)

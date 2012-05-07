@@ -248,7 +248,7 @@ module tree
    !>vortices for periodic boundary conditions
    recursive subroutine tree_walk(i,vtree,shift,u)
      implicit none
-     integer, intent(IN) :: i !the particle we are interested in
+     integer, intent(IN) :: i
      real, intent(IN) :: shift(3) !shift tree (periodicity)
      type (node), pointer :: vtree !the tree
      real :: u(3) !the velocity at particle i
@@ -327,6 +327,7 @@ module tree
      real :: a_bs, b_bs, c_bs, u_bs(3) !helper variables 
      integer :: j=0 !the particle in the tree mesh
      real :: reflect_cent(3) !helper for reflected center of mass
+     real :: s_img(3), s_gi_img(3) !dummy variables
      if (vtree%pcount==0) return !empty box no use
      !before we reflect get the distance between the geometric centre of the cell
      !and the centre of mass
@@ -334,11 +335,11 @@ module tree
                    (vtree%centy-(vtree%posy+vtree%width/2.))**2+&
                    (vtree%centz-(vtree%posz+vtree%width/2.))**2)
      !reflect the centre of mass in the appropriate plane
-     reflect_cent=vtree%vec_cent+2*abs(reflect)*(0.5*reflect*box_size-vtree%vec_cent)
-     !work out distances opening angles etc. here
-     dist=sqrt((f(i)%x(1)-reflect_cent(1))**2+& !we could make a call the general.mod here
-               (f(i)%x(2)-reflect_cent(2))**2+&
-               (f(i)%x(3)-reflect_cent(3))**2)
+     s_img=vtree%vec_cent+vtree%circ
+     s_gi_img=vtree%vec_cent
+     s_gi_img=s_gi_img+2*abs(reflect)*(0.5*reflect*box_size-s_gi_img)
+     s_img=s_img+2*abs(reflect)*(0.5*reflect*box_size-s_img)
+     dist=dist_gen(f(i)%x,s_img)
      !make the correction suggested by barnes and hut?
      if (tree_extra_correction) then
        if (dist-geo_dist>0.) then
@@ -349,6 +350,7 @@ module tree
      else
        theta=vtree%width/dist 
      end if
+     theta=vtree%width/dist 
      if (vtree%pcount==1.or.theta<tree_theta) then
        !use the contribution of this cell
        if (vtree%pcount==1) then !this will be particles very close to i
@@ -358,20 +360,21 @@ module tree
          !the wall are not included when building the tree
          if (f(j)%pinnedi) return!ignore vorex segment which goes into the wall
          !if pinned behind do not take the contribution from your own image as it 
-         if ((f(i)%pinnedb).and.(i==j)) return!has already been used in the local part
+         if ((sum(f(i)%wpinned-reflect)==0).and.(sum(f(i)%wpinned)<2)) then
+           if ((f(i)%pinnedb).and.(i==j)) return!has already been used in the local part
+           if ((f(i)%pinnedi).and.(j==f(i)%behind)) return!has already been used in the local part
+         end if
          if (dist<epsilon(0.)) then
            call fatal_error('tree.mod:tree_walk', & 
            'singularity in BS (tree) velocity field - &
            this is normally caused by having recon_shots too large') !cdata.mod
          end if
        end if
-       eval_counter=eval_counter+1 !increment this counter
-       vect(:)=reflect_cent(:)-f(i)%x(:)
        a_bs=dist**2
-       b_bs=2.*dot_product(vect,-vtree%circ) !-vtree%circ as reflection
-       c_bs=dot_product(vtree%circ,vtree%circ) 
+       b_bs=2.*dot_product((s_img-f(i)%x),(s_gi_img-s_img))
+       c_bs=dist_gen_sq(s_img,s_gi_img) !distance sqd between s_img, s_gi_img
        if (4*a_bs*c_bs-b_bs**2<epsilon(0.)) return !avoid 1/0
-       u_bs=cross_product(vect,-vtree%circ) !-vtree%circ as reflection
+       u_bs=cross_product((s_img-f(i)%x),(s_gi_img-s_img))
        u_bs=u_bs*quant_circ/((2*pi)*(4*a_bs*c_bs-b_bs**2))
        u_bs=u_bs*((2*c_bs+b_bs)/sqrt(a_bs+b_bs+c_bs)-(b_bs/sqrt(a_bs)))
        u=u+u_bs

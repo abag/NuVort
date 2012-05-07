@@ -147,9 +147,9 @@ module boundary
           pinned_component=maxloc(abs(f(i)%wpinned),1)
           !enforcing zero flux at boundaries
           if (f(i)%wpinned(pinned_component)>0) then
-            f(i)%x(pinned_component)=0.5*box_size
+            f(i)%x(pinned_component)=0.499999999*box_size
           else if (f(i)%wpinned(pinned_component)<0) then
-            f(i)%x(pinned_component)=-0.5*box_size
+            f(i)%x(pinned_component)=-0.499999999*box_size
           end if
         end if
       end if

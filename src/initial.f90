@@ -6,6 +6,7 @@ module initial
   use boundary
   use output
   use normal_fluid
+  use boundary
   contains
   !*************************************************************************
   !>Prints and sets up intial conditions - will give warnings/errors if there
@@ -117,6 +118,8 @@ module initial
                          'invalid choice for initf parameter') !cdata.mod
       end select
     end if
+    !enforce boundary conditions
+    call enforce_boundary
     !print initial filament to file
     call initial_printf !output.mod
     write(*,'(a)') ' ---------------------VELOCITY CALCULATION----------------------' 
