@@ -3,23 +3,25 @@
 function vortex_plot(filenumber,varargin)
 global dims
 global x y z
-global f u u2
+global f u u2 ghosti ghostb
 global number_of_particles
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 p = inputParser;
 validLogical = {'true','false'};
 checkLogical = @(x) any(validatestring(x,validLogical));
-p.addParamValue('LineWidth', 1, @isscalar); 
+p.addParamValue('LineWidth', 1, @isscalar);
 p.addParamValue('LineColor', 'k', @ischar);
 p.addParamValue('LineStyle','-', @ischar);
 p.addParamValue('MarkerColor','k', @ischar);
+p.addParamValue('PlotGhost','off', @ischar);
+p.addParamValue('OverHead','off', @ischar);
 parse(p,varargin{:});
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 vortex_load(filenumber)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if p.Results.LineColor=='rainbow'
+if strcmp(p.Results.LineColor,'rainbow')
   %scale velocity into a colormap
-  store_caxis=([min(u(u>0)) max(u)]); 
+  store_caxis=([min(u(u>0)) max(u)]);
   u=u-min(u(u>0));
   rainbow_scale=199/max(u) ;
   u=u*rainbow_scale;
@@ -37,16 +39,20 @@ for j=1:number_of_particles
     dummy_x(2,3)=z(round(f(j)));
     dist=sqrt((dummy_x(1,1)-dummy_x(2,1))^2+(dummy_x(1,2)-dummy_x(2,2))^2+(dummy_x(1,3)-dummy_x(2,3))^2);
     if (dist<0.5*dims(2))
-      if p.Results.LineColor=='rainbow'
+      if strcmp(p.Results.LineColor,'rainbow')
         plot3(dummy_x(1:2,1),dummy_x(1:2,2),dummy_x(1:2,3),p.Results.LineStyle,'LineWidth',p.Results.LineWidth,...
-            'Color',rainbowcmap(max(1,ceil(u(j))),:),'MarkerFaceColor',p.Results.MarkerColor,'MarkerEdgeColor',p.Results.MarkerColor)  
+          'Color',rainbowcmap(max(1,ceil(u(j))),:),'MarkerFaceColor',p.Results.MarkerColor,'MarkerEdgeColor',p.Results.MarkerColor)
       else
         plot3(dummy_x(1:2,1),dummy_x(1:2,2),dummy_x(1:2,3),p.Results.LineStyle,'LineWidth',p.Results.LineWidth,...
-            'Color',p.Results.LineColor,'MarkerFaceColor',p.Results.MarkerColor,'MarkerEdgeColor',p.Results.MarkerColor)  
-      end 
+          'Color',p.Results.LineColor,'MarkerFaceColor',p.Results.MarkerColor,'MarkerEdgeColor',p.Results.MarkerColor)
+      end
     end
-    hold on
+    if strcmp(p.Results.PlotGhost,'on')
+      plot3(ghosti(j,1),ghosti(j,2),ghosti(j,3),'o','MarkerEdgeColor','r')
+      plot3(ghostb(j,1),ghostb(j,2),ghostb(j,3),'o','MarkerEdgeColor','g')
+    end
   end
+  hold on
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %set axis
@@ -60,15 +66,22 @@ if dims(3)>0
   set(h,'FaceAlpha',0.2);
   colormap('hot')
 else
-  axis([-dims(2)/2 dims(2)/2 -dims(2)/2 dims(2)/2 -dims(2)/2 dims(2)/2]) 
+  axis([-dims(2)/2 dims(2)/2 -dims(2)/2 dims(2)/2 -dims(2)/2 dims(2)/2])
   box on
 end
-if p.Results.LineColor=='rainbow'
+if strcmp(p.Results.LineColor,'rainbow')
   caxis(store_caxis)
   colorbar
 end
+if strcmp(p.Results.OverHead,'on')
+  view(0,90)
+end
 set(gca,'FontSize',16)
-axis square
+if dims(3)>0
+  axis equal
+else
+  axis square
+end
 camproj('perspective')
 rotate3d on
 hold off

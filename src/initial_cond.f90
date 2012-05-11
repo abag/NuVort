@@ -43,32 +43,58 @@ module initial_cond
      real :: velocity, ring_energy
      real :: radius
      integer :: i
-     !check the boundary conditions are OK
-     if (boundary_x/='solid') call fatal_error('init_cond:',&
-     'need solid x boundary for this initial condition')
      radius=(0.75*pcount*delta)/pi !75% of potential size
      velocity=(quant_circ/(4*pi*radius))*(log(8*radius/corea)-.5)
      ring_energy=0.5*(quant_circ**2)*radius*(log(8*radius/corea)-2.)
      write(*,*) 'initf: half loop, radius of loop:', radius
      write(*,*) 'velocity should be:', velocity
      write(*,*) 'energy should be:', ring_energy
-     !loop over particles setting spatial and 'loop' position
-     do i=1, pcount
-       f(i)%x(1)=0.5*box_size-radius*sin(pi*real(i-1)/(pcount-1))
-       f(i)%x(2)=radius*cos(pi*real(i-1)/(pcount-1))
-       f(i)%x(3)=0.
-       if (i==1) then
-         f(i)%pinnedb=.true. ; f(i)%behind=i ; f(i)%wpinned=(/1,0,0/)
-         f(i)%infront=i+1
-       else if (i==pcount) then
-        f(i)%pinnedi=.true. ; f(i)%infront=i ; f(i)%wpinned=(/1,0,0/)
-        f(i)%behind=i-1
-       else
-         f(i)%behind=i-1 ; f(i)%infront=i+1
-       end if
-       !zero the stored velocities
-       f(i)%u1=0. ; f(i)%u2=0.
-     end do
+     !check the boundary conditions are OK
+     if (boundary_x=='solid') then
+       !loop over particles setting spatial and 'loop' position
+       do i=1, pcount
+         f(i)%x(1)=0.5*box_size-radius*sin(pi*real(i-1)/(pcount-1))
+         f(i)%x(2)=radius*cos(pi*real(i-1)/(pcount-1))
+         f(i)%x(3)=0.
+         if (i==1) then
+           f(i)%pinnedb=.true. ; f(i)%behind=i ; f(i)%wpinned=(/1,0,0/)
+           f(i)%infront=i+1
+         else if (i==pcount) then
+          f(i)%pinnedi=.true. ; f(i)%infront=i ; f(i)%wpinned=(/1,0,0/)
+          f(i)%behind=i-1
+         else
+           f(i)%behind=i-1 ; f(i)%infront=i+1
+         end if
+         !zero the stored velocities
+         f(i)%u1=0. ; f(i)%u2=0.
+       end do
+     else if (boundary_x=='cylind') then   
+       if (radius>cylind_r) call fatal_error('init.mod:setup_half_loop', &
+                                         'loop radius larger than cylinder radius')  
+       !loop over particles setting spatial and 'loop' position
+       do i=1, pcount
+         f(i)%x(1)=cylind_r-radius*sin(pi*real(i-1)/(pcount-1))
+         f(i)%x(2)=0. 
+         f(i)%x(3)=radius*cos(pi*real(i-1)/(pcount-1))
+!         f(i)%x(1)=sqrt(cylind_r**2-radius**2)-radius*sin(pi*real(i-1)/(pcount-1))
+!         f(i)%x(2)=radius*cos(pi*real(i-1)/(pcount-1))
+!         f(i)%x(3)=0. 
+         if (i==1) then
+           f(i)%pinnedb=.true. ; f(i)%behind=i ; f(i)%wpinned=(/1,1,0/)
+           f(i)%infront=i+1
+         else if (i==pcount) then
+          f(i)%pinnedi=.true. ; f(i)%infront=i ; f(i)%wpinned=(/1,1,0/)
+          f(i)%behind=i-1
+         else
+           f(i)%behind=i-1 ; f(i)%infront=i+1
+         end if
+         !zero the stored velocities
+         f(i)%u1=0. ; f(i)%u2=0.
+       end do
+     else
+       call fatal_error('init.mod:setup_half_loop', &
+      'incorrect boundary conditions')     
+     end if 
    end subroutine
   !*************************************************************************
   subroutine setup_random_loops

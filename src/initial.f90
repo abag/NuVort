@@ -51,7 +51,11 @@ module initial
           if (boundary_y/='cylind') call fatal_error('init_setup:',&
           'boundary_y must also be set to cylind')
           !now check that the cylinder radius has been set
-          if (cylind_r>epsilon(0.)) then 
+          if (cylind_r>epsilon(0.)) then
+            if ((cylind_r>=box_size/2.).and.(tree_theta>0.)) then
+              !we need to improve tree algorithm to avoid this
+              call fatal_error('init.mod','you must set cylind_r<box_size/2')
+            end if
             write(*,'(a)') ' boundary x/y: running with cylindrical boundary'
             write(*,'(a,f9.4)') ' radius of cylinder: ', cylind_r
             !to speed up logical evaluations if we are running with cylindrical 

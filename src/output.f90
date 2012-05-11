@@ -56,6 +56,12 @@ remove_count
       write(98) f(:)%x(3)
       write(98) f(:)%infront
       write(98) sqrt(f(:)%u(1)**2+f(:)%u(2)**2+f(:)%u(3)**2)
+      write(98) f(:)%ghosti(1)
+      write(98) f(:)%ghosti(2)
+      write(98) f(:)%ghosti(3)
+      write(98) f(:)%ghostb(1)
+      write(98) f(:)%ghostb(2)
+      write(98) f(:)%ghostb(3)
     close(98)
   end subroutine
   !**********************************************************************

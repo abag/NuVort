@@ -29,21 +29,23 @@ module boundary
     real :: ginfront(3), gbehind(3)
     real :: r_tmp
     if (f(i)%pinnedi) then
+      gbehind(:)=f(f(i)%behind)%x(:)
       if (sum(abs(f(i)%wpinned))==2) then
         !spherical reflection
         r_tmp=get_radius(f(f(i)%behind)%x)
-        ginfront(:)=f(f(i)%behind)%x*(2*cylind_r-r_tmp)/r_tmp
+        ginfront(1:2)=f(f(i)%behind)%x(1:2)*(2*cylind_r-r_tmp)/r_tmp
+        ginfront(3)=f(f(i)%behind)%x(3)
       else if (sum(abs(f(i)%wpinned))==1) then
         !cartesian reflection
         ginfront(:)=f(f(i)%behind)%x(:)+2*abs(f(i)%wpinned)*(0.5*f(i)%wpinned*box_size-f(f(i)%behind)%x(:))
       end if
-      gbehind(:)=f(f(i)%behind)%x(:)
     else if (f(i)%pinnedb) then
       ginfront(:)=f(f(i)%infront)%x(:)
       if (sum(abs(f(i)%wpinned))==2) then 
         !spherical reflection
         r_tmp=get_radius(f(f(i)%infront)%x)
-        ginfront(:)=f(f(i)%infront)%x*(2*cylind_r-r_tmp)/r_tmp
+        gbehind(1:2)=f(f(i)%infront)%x(1:2)*(2*cylind_r-r_tmp)/r_tmp
+        gbehind(3)=f(f(i)%infront)%x(3)
       else if (sum(abs(f(i)%wpinned))==1) then
         !cartesian reflection
         gbehind(:)=f(f(i)%infront)%x(:)+2*abs(f(i)%wpinned)*(0.5*f(i)%wpinned*box_size-f(f(i)%infront)%x(:))
@@ -102,7 +104,7 @@ module boundary
   !>routine simply resets the position.
   subroutine enforce_boundary()
     implicit none
-    real :: theta_store
+    real :: r_store
     integer :: i
     integer :: pinned_component
     !$omp parallel do private(i)
@@ -136,11 +138,9 @@ module boundary
       if (f(i)%pinnedi.or.f(i)%pinnedb) then
         !set the particle position back to the boundary 
         if (sum(abs(f(i)%wpinned))==2) then
-          !is this particle 
-          theta_store=atan2(f(i)%x(2),f(i)%x(1))
           !set the radius to be cylind_r
-          f(i)%x(1)=cylind_r*cos(theta_store)
-          f(i)%x(2)=cylind_r*sin(theta_store)
+          r_store=get_radius(f(i)%x)
+          f(i)%x(1:2)=cylind_r*f(i)%x(1:2)/r_store
         else if (sum(abs(f(i)%wpinned))==1) then
           !we use maxloc to find out if the particle is either
           !on the x,y or z boundaries

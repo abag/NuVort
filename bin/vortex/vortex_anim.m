@@ -4,7 +4,10 @@ function vortex_anim(filenumbers)
 eps=0;
 figure('visible','off');
 for i=filenumbers
-  vortex_plot(i)
+  subplot(2,1,1)
+    vortex_plot(i,'OverHead','on','LineWidth',2)
+  subplot(2,1,2)
+    vortex_plot(i,'LineWidth',2)
   if eps==1 
     fOUT=sprintf('data/var%04d.eps',i)
     print('-depsc',fOUT)

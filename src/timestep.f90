@@ -23,6 +23,7 @@ module timestep
       if (f(i)%infront==0) cycle !check for 'empty' particles
       call calc_velocity(u,i)
       f(i)%u(:)=u(:) !store the velocity for time-step
+      !print*, i,',',f(i)%u(1),',',f(i)%u(2),',',f(i)%u(3)
     end do
     !$omp end parallel do
     !$omp parallel do private(i)
@@ -78,22 +79,43 @@ module timestep
         beta=(quant_circ/(4.*pi))*log((1.1/corea)*sqrt(dist_gen(f(i)%x,f(i)%ghosti)*dist_gen(f(i)%x,f(i)%ghostb)))
         u=beta*cross_product(f_dot,f_ddot) !general.mod
         !now we do the non-local part
-        u_bs=0. !always 0 before calling the routine
-        call biot_savart(i,u_bs)
-        u=u+u_bs
-        !account for periodic boundary conditions
-        !we must shift the mesh in required directions
-        u_bs=0. !zero u_bs
-        do j=1, n_periodic
-          call biot_savart_shift(i,u_bs,periodic_loop_array(j,:)*box_size)
-        end do 
-        u=u+u_bs
-        !and now solid boundaries via image vortices
-        u_mir=0. !zero u_mir
-        do j=1, n_mirror
-          call biot_savart_mirror(i,u_mir,mirror_loop_array(j,:))
-        end do 
-        u=u+u_mir
+        if (cylindrical_boundaries) then
+          !-------------------cylindrical domain----------------
+          u_bs=0. !always 0 before calling the routine
+          call biot_savart_cylind(i,u_bs)
+          u=u+u_bs
+          !periodic boundaries
+          u_bs=0.
+        
+          !do j=1, n_periodic
+          !  call biot_savart_cylind_shift(i,u_bs,periodic_loop_array(j,:)*box_size)
+          !end do
+          !u=u+u_bs
+          !and now solid boundaries via image vortices
+          u_mir=0. !zero u_mir
+          do j=1, n_mirror
+            call biot_savart_cylind_mirror(i,u_mir,mirror_loop_array(j,:))
+          end do 
+          u=u+u_mir
+        else
+          !-------------------cartesian box----------------
+          u_bs=0. !always 0 before calling the routine
+          call biot_savart(i,u_bs)
+          u=u+u_bs
+          !account for periodic boundary conditions
+          !we must shift the mesh in required directions
+          u_bs=0. !zero u_bs
+          do j=1, n_periodic
+            call biot_savart_shift(i,u_bs,periodic_loop_array(j,:)*box_size)
+          end do 
+          u=u+u_bs
+          !and now solid boundaries via image vortices
+          u_mir=0. !zero u_mir
+          do j=1, n_mirror
+            call biot_savart_mirror(i,u_mir,mirror_loop_array(j,:))
+          end do 
+          u=u+u_mir
+        end if
       case('Tree')
         !tree approximation to biot savart
         !first get the local part (similar to LIA)
@@ -102,21 +124,34 @@ module timestep
         beta=(quant_circ/(4.*pi))*log((1.1/corea)*sqrt(dist_gen(f(i)%x,f(i)%ghosti)*dist_gen(f(i)%x,f(i)%ghostb)))
         u=beta*cross_product(f_dot,f_ddot) !general.mod
         !now walk the tree to get the non-local contribution
-        u_bs=0. !zero u_bs
-        call tree_walk(i,vtree,(/0.,0.,0./),u_bs) !tree.mod
-        u=u+u_bs
-        !now account for periodic  boundary conditons
-        u_bs=0. !zero u_bs
-        do j=1, n_periodic
-          call tree_walk(i,vtree,periodic_loop_array(j,:)*box_size,u_bs)
-        end do 
-        u=u+u_bs
-        !and now solid boundaries via mirrored tree
-        u_mir=0. !zero u_mir
-        do j=1, n_mirror
-          call tree_walk_mirror(i,vtree,mirror_loop_array(j,:),u_mir)
-        end do 
-        u=u+u_mir
+        if (cylindrical_boundaries) then
+          !-------------------cylindrical domain----------------
+          u_bs=0. !always 0 before calling the routine
+          call tree_walk_cylind(i,vtree,(/0.,0.,0./),u_bs) !tree.mod
+          u=u+u_bs
+          !now account for periodic  boundary conditons
+          !u_bs=0. !zero u_bs
+          !do j=1, n_periodic
+          !  call tree_walk_cylind(i,vtree,periodic_loop_array(j,:)*box_size,u_bs)
+          !end do 
+          !u=u+u_bs
+        else
+          u_bs=0. !zero u_bs
+          call tree_walk(i,vtree,(/0.,0.,0./),u_bs) !tree.mod
+          u=u+u_bs
+          !now account for periodic  boundary conditons
+          u_bs=0. !zero u_bs
+          do j=1, n_periodic
+            call tree_walk(i,vtree,periodic_loop_array(j,:)*box_size,u_bs)
+          end do 
+          u=u+u_bs
+          !and now solid boundaries via mirrored tree
+          u_mir=0. !zero u_mir
+          do j=1, n_mirror
+            call tree_walk_mirror(i,vtree,mirror_loop_array(j,:),u_mir)
+          end do 
+          u=u+u_mir
+        end if
     end select
     !-------------------------normal fluid--------------------------
     !check that either of the mutual friction coefficients are >0
@@ -197,9 +232,8 @@ module timestep
     integer  :: reflect(3) !for reflecting 
     integer :: j !needed to loop over all particles
     do j=1, pcount
-      !check that the particle is not empty
-      if (f(j)%infront==0) cycle
-      if (f(j)%pinnedi) cycle!ignore vorex segment which goes into the wall
+      !check that the particle is not empty or goes into the wall
+      if ((f(j)%infront==0).or.(f(j)%pinnedi)) cycle
       !if pinned behind do not take the contribution from your own image as it 
       if ((sum(f(i)%wpinned-reflect)==0).and.(sum(f(i)%wpinned)<2)) then
         if ((f(i)%pinnedb).and.(i==j)) cycle!has already been used in the local part
@@ -211,6 +245,180 @@ module timestep
       s_img=f(j)%ghosti+2*abs(reflect)*(0.5*reflect*box_size-f(j)%ghosti)
       !note above s_gi_img comes from f(j)%x and s_img from the ghost infront
       !as we have a reflection, hence orientation if flipped
+      a_bs=dist_gen_sq(f(i)%x,s_img) !distance squared between i and s_img
+      b_bs=2.*dot_product((s_img-f(i)%x),(s_gi_img-s_img))
+      c_bs=dist_gen_sq(s_img,s_gi_img) !distance sqd between s_img, s_gi_img
+      !add non local contribution to velocity vector
+      if (4*a_bs*c_bs-b_bs**2==0) cycle !avoid 1/0
+      u_bs=cross_product((s_img-f(i)%x),(s_gi_img-s_img))
+      u_bs=u_bs*quant_circ/((2*pi)*(4*a_bs*c_bs-b_bs**2))
+      u_bs=u_bs*((2*c_bs+b_bs)/sqrt(a_bs+b_bs+c_bs)-(b_bs/sqrt(a_bs)))
+      u=u+u_bs !add on the non-local contribution of j
+    end do
+  end subroutine
+  !**************************************************************************
+  !>the biot savart integral with cylindrical mirror
+  !>\f[
+  !>\frac{d\mathbf{s}_i}{dt}=\frac{\Gamma}{4\pi} \ln \left(\frac{\sqrt{\ell_i
+  !>\ell_{i+1}}}{a}\right)\mathbf{s}_i' \times \mathbf{s}_i'' 
+  !>+\frac{\Gamma}{4 \pi} \oint_{\cal L'} \frac{(\mathbf{s}_i-\mathbf{r}) }
+  !>{\vert \mathbf{s}_i - \mathbf{r} \vert^3}
+  !>\times {\bf d}\mathbf{r}
+  !>\f] note the LIA part is calculated in calc_velocity
+  subroutine biot_savart_cylind(i,u)
+    implicit none
+    integer, intent(IN) :: i !the particle we want the velocity at
+    real :: u(3) !the velocity at i (non-local)#
+    real :: u_bs(3) !helper array
+    real :: s_img(3), s_gi_img(3) !dummy variables
+    real :: a_bs, b_bs, c_bs !helper variables
+    integer :: j !needed to loop over all particles
+    do j=1, pcount
+      !line below ignores points which go into the wall and empty points
+      if ((f(j)%infront==0).or.f(j)%pinnedi) cycle 
+      !----------first compute the mirror contribution-------------
+      !in here we should have if sum(f(i)%wpinned)==2 then do the checks, 
+      !these are points on the cylinder, we want to ignore their contribution
+      if (sum(f(i)%wpinned)==2) then
+        if ((f(i)%pinnedb).and.(i==j)) cycle!has already been used in the local part
+        if ((f(i)%pinnedi).and.(j==f(i)%behind)) cycle!has already been used in the local part
+      end if
+      !perform the reflection                     
+      s_gi_img(1:2)=f(j)%x(1:2)*((cylind_r/get_radius(f(j)%x))**2) 
+      s_gi_img(3)=f(j)%x(3)
+      s_img(1:2)=f(j)%ghosti(1:2)*((cylind_r/get_radius(f(j)%ghosti))**2)
+      s_img(3)=f(j)%ghosti(3)
+      !note above s_gi_img comes from f(j)%x and s_img from the ghost infront
+      !as we have a reflection, hence orientation if flipped
+      !now compute its contribution to the BS integral
+      a_bs=dist_gen_sq(f(i)%x,s_img) !distance squared between i and s_img
+      b_bs=2.*dot_product((s_img-f(i)%x),(s_gi_img-s_img))
+      c_bs=dist_gen_sq(s_img,s_gi_img) !distance sqd between s_img, s_gi_img
+      !add non local contribution to velocity vector
+      if (4*a_bs*c_bs-b_bs**2==0) cycle !avoid 1/0
+      u_bs=cross_product((s_img-f(i)%x),(s_gi_img-s_img))
+      u_bs=u_bs*quant_circ/((2*pi)*(4*a_bs*c_bs-b_bs**2))
+      u_bs=u_bs*((2*c_bs+b_bs)/sqrt(a_bs+b_bs+c_bs)-(b_bs/sqrt(a_bs)))
+      u=u+u_bs !add on the non-local contribution of j
+      !----------now the contribution from inside-------------
+      !check that the particle is not i/f(i)%behind
+      if ((i==j).or.(f(i)%behind==j)) cycle
+      a_bs=distfsq(j,i) !distance squared between i and j
+      b_bs=2.*dot_product((f(j)%x-f(i)%x),(f(j)%ghosti-f(j)%x))
+      c_bs=dist_gen_sq(f(j)%ghosti,f(j)%x) !distance sqd between j, j+1
+      !add non local contribution to velocity vector
+      if (4*a_bs*c_bs-b_bs**2==0) cycle !avoid 1/0
+      u_bs=cross_product((f(j)%x-f(i)%x),(f(j)%ghosti-f(j)%x))
+      u_bs=u_bs*quant_circ/((2*pi)*(4*a_bs*c_bs-b_bs**2))
+      u_bs=u_bs*((2*c_bs+b_bs)/sqrt(a_bs+b_bs+c_bs)-(b_bs/sqrt(a_bs)))
+      u=u+u_bs !add on the non-local contribution of j
+      !print*, i,'normal', j
+    end do
+  end subroutine
+  !**************************************************************************
+  !>the biot savart integral with cylindrical mirror shift for periodicity
+  !>\f[
+  !>\frac{d\mathbf{s}_i}{dt}=\frac{\Gamma}{4\pi} \ln \left(\frac{\sqrt{\ell_i
+  !>\ell_{i+1}}}{a}\right)\mathbf{s}_i' \times \mathbf{s}_i'' 
+  !>+\frac{\Gamma}{4 \pi} \oint_{\cal L'} \frac{(\mathbf{s}_i-\mathbf{r}) }
+  !>{\vert \mathbf{s}_i - \mathbf{r} \vert^3}
+  !>\times {\bf d}\mathbf{r}
+  !>\f] note the LIA part is calculated in calc_velocity
+  subroutine biot_savart_cylind_shift(i,u,shift)
+    implicit none
+    integer, intent(IN) :: i !the particle we want the velocity at
+    real :: u(3) !the velocity at i (non-local)#
+    real :: u_bs(3) !helper array
+    real :: shift(3) !moves all the particles for periodic_bc in z
+    real :: s_img(3), s_gi_img(3) !dummy variables
+    real :: s_per(3), s_gi_per(3) !dummy variables
+    real :: a_bs, b_bs, c_bs !helper variables
+    integer :: j !needed to loop over all particles
+    do j=1, pcount
+      !----------first compute the mirror contribution-------------
+      if ((f(j)%infront==0).or.f(j)%pinnedi) cycle !ignore vorex segment which goes into the wall
+      !perform the reflection                      !and empty points
+      s_gi_img(1:2)=f(j)%x(1:2)*((cylind_r/get_radius(f(j)%x))**2) 
+      s_gi_img(3)=f(j)%x(3)
+      s_img(1:2)=f(j)%ghosti(1:2)*((cylind_r/get_radius(f(j)%ghosti))**2)
+      s_img(3)=f(j)%ghosti(3)
+      !note above s_gi_img comes from f(j)%x and s_img from the ghost infront
+      !as we have a reflection, hence orientation if flipped     
+      !now perform the shift we can do this here as shift is in z only
+      s_gi_img=s_gi_img+shift ; s_img=s_img+shift
+      !now compute its contribution to the BS integral
+      a_bs=dist_gen_sq(f(i)%x,s_img) !distance squared between i and s_img
+      b_bs=2.*dot_product((s_img-f(i)%x),(s_gi_img-s_img))
+      c_bs=dist_gen_sq(s_img,s_gi_img) !distance sqd between s_img, s_gi_img
+      !add non local contribution to velocity vector
+      if (4*a_bs*c_bs-b_bs**2==0) cycle !avoid 1/0
+      u_bs=cross_product((s_img-f(i)%x),(s_gi_img-s_img))
+      u_bs=u_bs*quant_circ/((2*pi)*(4*a_bs*c_bs-b_bs**2))
+      u_bs=u_bs*((2*c_bs+b_bs)/sqrt(a_bs+b_bs+c_bs)-(b_bs/sqrt(a_bs)))
+      u=u+u_bs !add on the non-local contribution of j
+      !----------now the contribution from inside-------------
+      !copy points into dummy variables and perform the shift
+      s_per(:)=f(j)%x+shift ; s_gi_per(:)=f(j)%ghosti + shift
+      !now compute its contribution to the BS integral
+      a_bs=dist_gen_sq(f(i)%x,s_per) !distance squared between i and s_per
+      b_bs=2.*dot_product((s_per-f(i)%x),(s_gi_per-s_per))
+      c_bs=dist_gen_sq(s_per,s_gi_per) !distance sqd between s_per, s_gi_per
+      !add non local contribution to velocity vector
+      if (4*a_bs*c_bs-b_bs**2==0) cycle !avoid 1/0
+      u_bs=cross_product((s_per-f(i)%x),(s_gi_per-s_per))
+      u_bs=u_bs*quant_circ/((2*pi)*(4*a_bs*c_bs-b_bs**2))
+      u_bs=u_bs*((2*c_bs+b_bs)/sqrt(a_bs+b_bs+c_bs)-(b_bs/sqrt(a_bs)))
+      u=u+u_bs !add on the non-local contribution of j
+    end do
+  end subroutine
+  !**************************************************************************
+  !>the biot savart integral with cylindrical mirror, also  reflects in z direction
+  !> for solid boundaries
+  subroutine biot_savart_cylind_mirror(i,u,reflect)
+    implicit none
+    integer, intent(IN) :: i !the particle we want the velocity at
+    real :: u(3) !the velocity at i (non-local)#
+    real :: u_bs(3) !helper array
+    integer, intent(IN) :: reflect(3) !reflects the particles for solid z bound.
+    real :: s_img(3), s_gi_img(3) !dummy variables
+    real :: a_bs, b_bs, c_bs !helper variables
+    integer :: j !needed to loop over all particles
+    do j=1, pcount
+      !----------first compute the mirror contribution-------------
+      if ((f(j)%infront==0).or.f(j)%pinnedi) cycle !ignore vorex segment which goes into the wall
+      !perform the reflection in cylinder          !and empty points
+      s_gi_img(1:2)=f(j)%x(1:2)*((cylind_r/get_radius(f(j)%x))**2) 
+      s_gi_img(3)=f(j)%x(3)
+      s_img(1:2)=f(j)%ghosti(1:2)*((cylind_r/get_radius(f(j)%ghosti))**2)
+      s_img(3)=f(j)%ghosti(3)
+      !note above s_gi_img comes from f(j)%x and s_img from the ghost infront
+      !as we have a reflection, hence orientation is flipped     
+      !now perform the reflection in the z axis
+      !axis and storing the results in s_img, s_gi_img 
+      s_gi_img=s_gi_img+2*abs(reflect)*(0.5*reflect*box_size-s_gi_img)
+      s_img=s_img+2*abs(reflect)*(0.5*reflect*box_size-s_img)
+      !now compute its contribution to the BS integral
+      a_bs=dist_gen_sq(f(i)%x,s_img) !distance squared between i and s_img
+      b_bs=2.*dot_product((s_img-f(i)%x),(s_gi_img-s_img))
+      c_bs=dist_gen_sq(s_img,s_gi_img) !distance sqd between s_img, s_gi_img
+      !add non local contribution to velocity vector
+      if (4*a_bs*c_bs-b_bs**2==0) cycle !avoid 1/0
+      u_bs=cross_product((s_img-f(i)%x),(s_gi_img-s_img))
+      u_bs=u_bs*quant_circ/((2*pi)*(4*a_bs*c_bs-b_bs**2))
+      u_bs=u_bs*((2*c_bs+b_bs)/sqrt(a_bs+b_bs+c_bs)-(b_bs/sqrt(a_bs)))
+      u=u+u_bs !add on the non-local contribution of j
+      !----------now the contribution from inside-------------
+      !if pinned behind do not take the contribution from your own image as it 
+      if ((sum(f(i)%wpinned-reflect)==0).and.(sum(f(i)%wpinned)<2)) then
+        if ((f(i)%pinnedb).and.(i==j)) cycle!has already been used in the local part
+        if ((f(i)%pinnedi).and.(j==f(i)%behind)) cycle!has already been used in the local part
+      end if
+      !copy points into dummy variables and perform the shift
+      !we now create dummy variables reflecting f(j)%x and f(j)%ghosti in the required
+      !axis and storing the results in s_gi_img, s_img respectively
+      s_gi_img=f(j)%x+2*abs(reflect)*(0.5*reflect*box_size-f(j)%x)
+      s_img=f(j)%ghosti+2*abs(reflect)*(0.5*reflect*box_size-f(j)%ghosti)
+      !now compute its contribution to the BS integral
       a_bs=dist_gen_sq(f(i)%x,s_img) !distance squared between i and s_img
       b_bs=2.*dot_product((s_img-f(i)%x),(s_gi_img-s_img))
       c_bs=dist_gen_sq(s_img,s_gi_img) !distance sqd between s_img, s_gi_img
