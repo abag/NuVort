@@ -87,10 +87,10 @@ module timestep
           !periodic boundaries
           u_bs=0.
         
-          !do j=1, n_periodic
-          !  call biot_savart_cylind_shift(i,u_bs,periodic_loop_array(j,:)*box_size)
-          !end do
-          !u=u+u_bs
+          do j=1, n_periodic
+            call biot_savart_cylind_shift(i,u_bs,periodic_loop_array(j,:)*box_size)
+          end do
+          u=u+u_bs
           !and now solid boundaries via image vortices
           u_mir=0. !zero u_mir
           do j=1, n_mirror
@@ -130,11 +130,17 @@ module timestep
           call tree_walk_cylind(i,vtree,(/0.,0.,0./),u_bs) !tree.mod
           u=u+u_bs
           !now account for periodic  boundary conditons
-          !u_bs=0. !zero u_bs
-          !do j=1, n_periodic
-          !  call tree_walk_cylind(i,vtree,periodic_loop_array(j,:)*box_size,u_bs)
-          !end do 
-          !u=u+u_bs
+          u_bs=0. !zero u_bs
+          do j=1, n_periodic
+            call tree_walk_cylind(i,vtree,periodic_loop_array(j,:)*box_size,u_bs)
+          end do 
+          u=u+u_bs
+          !and now solid boundaries via mirrored tree
+          u_mir=0. !zero u_mir
+          do j=1, n_mirror
+            call tree_walk_cylind_mirror(i,vtree,mirror_loop_array(j,:),u_mir)
+          end do 
+          u=u+u_mir
         else
           u_bs=0. !zero u_bs
           call tree_walk(i,vtree,(/0.,0.,0./),u_bs) !tree.mod
