@@ -1,13 +1,14 @@
 %script is just kept to be used by batch scipt mtlb_anim.sh
 %uses vortex_plot.m to create snapshots of filament
-function vortex_anim(filenumbers)
+function vortex_anim(filenumbers,varargin)
 eps=0;
 figure('visible','off');
 for i=filenumbers
-  subplot(2,1,1)
-    vortex_plot(i,'OverHead','on','LineWidth',2)
-  subplot(2,1,2)
-    vortex_plot(i,'LineWidth',2)
+  if isempty(varargin)
+    vortex_plot(i)
+  else
+    vortex_plot(i,varargin{:})
+  end
   if eps==1 
     fOUT=sprintf('data/var%04d.eps',i)
     print('-depsc',fOUT)

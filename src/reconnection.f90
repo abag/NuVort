@@ -86,6 +86,7 @@ module reconnection
           !we must test if we have 'double pinned the particle infront or behind'
           if (f(pari)%pinnedi.and.f(pari)%pinnedb) call clear_particle(pari)
           if (f(parb)%pinnedi.and.f(parb)%pinnedb) call clear_particle(parb)
+          wall_recon_count=wall_recon_count+1 !keep track of the total # of wall recons
         else if (f(i)%x(1)<-0.5*(box_size-delta)) then
           pari=f(i)%infront ; parb=f(i)%behind !find particle infront/behind
           f(pari)%pinnedb=.true. ; f(pari)%behind=pari ; f(pari)%wpinned=(/-1,0,0/) 
@@ -94,6 +95,7 @@ module reconnection
           !we must test if we have 'double pinned the particle infront or behind'
           if (f(pari)%pinnedi.and.f(pari)%pinnedb) call clear_particle(pari)
           if (f(parb)%pinnedi.and.f(parb)%pinnedb) call clear_particle(parb)
+          wall_recon_count=wall_recon_count+1 !keep track of the total # of wall recons
         end if 
       end if
       ! y - boundary
@@ -106,6 +108,7 @@ module reconnection
           !we must test if we have 'double pinned the particle infront or behind'
           if (f(pari)%pinnedi.and.f(pari)%pinnedb) call clear_particle(pari)
           if (f(parb)%pinnedi.and.f(parb)%pinnedb) call clear_particle(parb)
+          wall_recon_count=wall_recon_count+1 !keep track of the total # of wall recons
         else if (f(i)%x(2)<-0.5*(box_size-delta)) then
           pari=f(i)%infront ; parb=f(i)%behind !find particle infront/behind
           f(pari)%pinnedb=.true. ; f(pari)%behind=pari ; f(pari)%wpinned=(/0,-1,0/) 
@@ -114,6 +117,7 @@ module reconnection
           !we must test if we have 'double pinned the particle infront or behind'
           if (f(pari)%pinnedi.and.f(pari)%pinnedb) call clear_particle(pari)
           if (f(parb)%pinnedi.and.f(parb)%pinnedb) call clear_particle(parb)
+          wall_recon_count=wall_recon_count+1 !keep track of the total # of wall recons
         end if 
       end if
       ! z - boundary
@@ -126,6 +130,7 @@ module reconnection
           !we must test if we have 'double pinned the particle infront or behind'
           if (f(pari)%pinnedi.and.f(pari)%pinnedb) call clear_particle(pari)
           if (f(parb)%pinnedi.and.f(parb)%pinnedb) call clear_particle(parb)
+          wall_recon_count=wall_recon_count+1 !keep track of the total # of wall recons
         else if (f(i)%x(3)<-0.5*(box_size-delta)) then
           pari=f(i)%infront ; parb=f(i)%behind !find particle infront/behind
           f(pari)%pinnedb=.true. ; f(pari)%behind=pari ;f(pari)%wpinned=(/0,0,-1/)
@@ -134,6 +139,7 @@ module reconnection
           !we must test if we have 'double pinned the particle infront or behind'
           if (f(pari)%pinnedi.and.f(pari)%pinnedb) call clear_particle(pari)
           if (f(parb)%pinnedi.and.f(parb)%pinnedb) call clear_particle(parb)
+          wall_recon_count=wall_recon_count+1 !keep track of the total # of wall recons
         end if 
       end if
       !------------------------now check for cylindrical case---------------------
@@ -146,13 +152,15 @@ module reconnection
           !we must test if we have 'double pinned the particle infront or behind'
           if (f(pari)%pinnedi.and.f(pari)%pinnedb) call clear_particle(pari)
           if (f(parb)%pinnedi.and.f(parb)%pinnedb) call clear_particle(parb)
+          wall_recon_count=wall_recon_count+1 !keep track of the total # of wall recons
         end if
       end if
     end do
   end subroutine
   !**************************************************
-  !>removes loops with less than 4 particles
-  !>this is needed to ensure derivatives can be calculated correctly
+  !>removes loops with less than 4 particles this is needed
+  !>to ensure derivatives can be calculated correctly pinned points 
+  !>are ignored, we remove small loops on the boundary in premove
   subroutine loop_killer(particle)
     implicit none
     integer :: particle, next
@@ -160,7 +168,10 @@ module reconnection
     integer :: i, counter
     counter=1
     next=particle
-    do i=1, pcount   
+    do i=1, pcount
+      !do not checked pinned points we check these in a
+      !separate routine
+      if (f(next)%pinnedi.or.f(next)%pinnedb) return   
       next=f(next)%infront
       if (next==particle) exit  
       counter=counter+1

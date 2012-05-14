@@ -124,7 +124,7 @@ module initial_cond
       write(*,'(a,f7.4,a)') ' rotation applied to loops: ', rotation_factor, '*2\pi'
     end if
     if (scale_factor<1.) then
-      write(*,'(a,f7.4,a)') ' loops occupy ', 100*scale_factor, '% of box volume'
+      write(*,'(a,3f13.4,a)') ' loops occupy ', 100*loop_translate, '% of box volume'
     end if
     do i=1, line_count
       call random_number(anglex)
@@ -134,7 +134,7 @@ module initial_cond
       anglex=anglex*2*pi*rotation_factor
       angley=angley*2*pi*rotation_factor
       anglez=anglez*2*pi*rotation_factor
-      translate=scale_factor*((box_size*translate-box_size/2.)-loop_radius)
+      translate=loop_translate*((box_size*translate-box_size/2.)-loop_radius)
         
       do j=1, loop_size
 

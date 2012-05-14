@@ -40,8 +40,8 @@ program run
         call pclose !line.mod
       end if
       call precon !reconnection.mod
-      call premove !line.mod
       call wall_recon
+      call premove !line.mod
     end if
     !-------------------boundary conditions------------------------
     call enforce_boundary !boundary.mod
@@ -58,7 +58,7 @@ program run
     if (tree_theta>0) then
       call empty_tree(vtree) !empty the tree to avoid a memory leak
       deallocate(vtree%parray) ; deallocate(vtree)
-      nullify(vtree) !just in case!
+      tree_eval=0 ; nullify(vtree) !just in case!
     end if
     !--------------------final sanity checks----------------------
     if (NAN_test) call NAN_finder !general.mod

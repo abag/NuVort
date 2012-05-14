@@ -23,7 +23,6 @@ module timestep
       if (f(i)%infront==0) cycle !check for 'empty' particles
       call calc_velocity(u,i)
       f(i)%u(:)=u(:) !store the velocity for time-step
-      !print*, i,',',f(i)%u(1),',',f(i)%u(2),',',f(i)%u(3)
     end do
     !$omp end parallel do
     !$omp parallel do private(i)

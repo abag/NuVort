@@ -33,7 +33,7 @@ module line
         print*, 'I think there is a problem' ; exit
       end if
       if (f(i)%infront==0) cycle !empty particle
-      if (f(i)%pinnedi) cycle !ignore pinned points
+      if (f(i)%pinnedi) cycle !ignore pinned points infront
       !get the distance between the particle and the one infront
       disti=dist_gen(f(i)%x,f(i)%ghosti) !general.f90
       total_length=total_length+disti !measure total length of filaments
@@ -119,8 +119,12 @@ module line
         f(tinfront)%behind=i ; f(i)%infront=tinfront
         call clear_particle(infront) !general.mod
         !check the size of the new loop
-        call loop_killer(i)
+        call loop_killer(i) !reconnection.mod
         remove_count=remove_count+1
+      end if
+      !also check for two points on the boundary and remove
+      if (f(i)%pinnedb.and.f(f(i)%infront)%pinnedi) then
+        call clear_particle(f(i)%infront) ; call clear_particle(i) !general.mod
       end if
     end do
   end subroutine

@@ -21,19 +21,19 @@ module output
     call printf(itime/shots) !output.mod
     open(unit=78,file='data/ts.log',position='append')
     if (itime==shots) then
-      write(*,'(a)') '--var--------t-------pcount-------recon----avg_d-----length&
-                --------maxu---------maxdu-------curv------removed'
-      write(78,*) '%--var--------t-------pcount-------recon----avg_d-----length&
-                   --------maxu---------maxdu------curv------removed'
+      write(*,'(a)') '--var--------t--------pcount--------recon-----wall_recon---avg_d-----&
+                length--------maxu---------maxdu-------curv------removed'
+      write(78,*) '%--var--------t-------pcount--------recon-----wall_recon----avg_d-----&
+                   length--------maxu---------maxdu------curv------removed-----tree_eval'
     end if
-    write(*,'(i6.4,f13.7,i10.1,i13.1,f7.4,f13.6,f13.5,f13.5,f10.2,i13.1)') &
-    itime/shots,t,count(mask=f(:)%infront>0),recon_count,avg_sep/delta,&
+    write(*,'(i6.4,f13.7,i10.1,i13.1,i13.1,f7.4,f13.6,f13.5,f13.5,f10.2,i13.1)') &
+    itime/shots,t,count(mask=f(:)%infront>0),recon_count,wall_recon_count,avg_sep/delta,&
     total_length,maxu,maxdu,kappa_bar,&
     remove_count
-    write(78,'(i6.4,f13.7,i10.1,i13.1,f7.4,f13.6,f13.5,f13.5,f10.2,i13.1)') &
-itime/shots,t,count(mask=f(:)%infront>0),recon_count,avg_sep/delta,&
+    write(78,'(i6.4,f13.7,i10.1,i13.1,i13.1,f7.4,f13.6,f13.5,f13.5,f10.2,i13.1,i13.1)') &
+itime/shots,t,count(mask=f(:)%infront>0),recon_count,wall_recon_count,avg_sep/delta,&
 total_length,maxu,maxdu,kappa_bar,&
-remove_count
+remove_count, tree_eval
     close(78)
     open(unit=79,file='data/curvature.log',position='append')
       write(79,*) kappa_bar, kappa_min, kappa_max

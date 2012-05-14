@@ -302,6 +302,7 @@ module tree
        u_bs=u_bs*quant_circ/((2*pi)*(4*a_bs*c_bs-b_bs**2))
        u_bs=u_bs*((2*c_bs+b_bs)/sqrt(a_bs+b_bs+c_bs)-(b_bs/sqrt(a_bs)))
        u=u+u_bs
+       tree_eval=tree_eval+1 !increment this counter
      else
        !open the box up and use the child cells
        call tree_walk(i,vtree%fbl,shift,u) ; call tree_walk(i,vtree%fbr,shift,u)
@@ -364,7 +365,7 @@ module tree
            if ((f(i)%pinnedi).and.(j==f(i)%behind)) return!has already been used in the local part
          end if
          if (dist<epsilon(0.)) then
-           call fatal_error('tree.mod:tree_walk', & 
+           call fatal_error('tree.mod:tree_walk_mirror', & 
            'singularity in BS (tree) velocity field - &
            this is normally caused by having recon_shots too large') !cdata.mod
          end if
@@ -377,6 +378,7 @@ module tree
        u_bs=u_bs*quant_circ/((2*pi)*(4*a_bs*c_bs-b_bs**2))
        u_bs=u_bs*((2*c_bs+b_bs)/sqrt(a_bs+b_bs+c_bs)-(b_bs/sqrt(a_bs)))
        u=u+u_bs
+       tree_eval=tree_eval+1 !increment this counter
      else
        !open the box up and use the child cells
        call tree_walk_mirror(i,vtree%fbl,reflect,u) ; call tree_walk_mirror(i,vtree%fbr,reflect,u)
@@ -438,6 +440,7 @@ module tree
        u_bs=u_bs*quant_circ/((2*pi)*(4*a_bs*c_bs-b_bs**2))
        u_bs=u_bs*((2*c_bs+b_bs)/sqrt(a_bs+b_bs+c_bs)-(b_bs/sqrt(a_bs)))
        u=u+u_bs !add on the non-local contribution of j
+       tree_eval=tree_eval+1 !increment this counter
        !------------------points inside the cylinder-------------------
        if (vtree%pcount==1) then!this will be particles very close to i
          !check that the particle is not itself or the particle behind
@@ -464,6 +467,7 @@ module tree
        u_bs=u_bs*quant_circ/((2*pi)*(4*a_bs*c_bs-b_bs**2))
        u_bs=u_bs*((2*c_bs+b_bs)/sqrt(a_bs+b_bs+c_bs)-(b_bs/sqrt(a_bs)))
        u=u+u_bs
+       tree_eval=tree_eval+1 !increment this counter
      else
        !open the box up and use the child cells
        call tree_walk_cylind(i,vtree%fbl,shift,u) ; call tree_walk_cylind(i,vtree%fbr,shift,u)
@@ -517,6 +521,7 @@ module tree
        u_bs=u_bs*quant_circ/((2*pi)*(4*a_bs*c_bs-b_bs**2))
        u_bs=u_bs*((2*c_bs+b_bs)/sqrt(a_bs+b_bs+c_bs)-(b_bs/sqrt(a_bs)))
        u=u+u_bs !add on the non-local contribution of j
+       tree_eval=tree_eval+1 !increment this counter
        !------------------points inside the cylinder-------------------
        if (vtree%pcount==1) then!this will be particles very close to i
          j=f(vtree%parray(1)%infront)%behind !get j from the parray 
@@ -547,6 +552,7 @@ module tree
        u_bs=u_bs*quant_circ/((2*pi)*(4*a_bs*c_bs-b_bs**2))
        u_bs=u_bs*((2*c_bs+b_bs)/sqrt(a_bs+b_bs+c_bs)-(b_bs/sqrt(a_bs)))
        u=u+u_bs !add on the non-local contribution of j
+       tree_eval=tree_eval+1 !increment this counter
      else
        !open the box up and use the child cells
        call tree_walk_cylind_mirror(i,vtree%fbl,reflect,u) ; call tree_walk_cylind_mirror(i,vtree%fbr,reflect,u)

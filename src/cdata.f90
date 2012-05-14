@@ -40,6 +40,8 @@ module cdata
   !***********DIAGNOSTIC INFO******************************************************
   !>total number of reconnections
   integer :: recon_count=0 
+  !>total number of reconnections with boundaries
+  integer :: wall_recon_count=0 
   !>total number of particle removals due to contraction of filament
   integer :: remove_count=0 
   !>total length of filaments
@@ -53,6 +55,8 @@ module cdata
   !>mean curvature
   real :: kappa_bar 
   real :: kappa_min, kappa_max !min/max curvature 
+  !>number of evalulations when using tree algorithm
+  integer :: tree_eval=0
   !***********CONSTANTS************************************************************
   !some constants - precompute for speed
   real, parameter :: pi=3.14159265358979324
@@ -191,6 +195,8 @@ module cdata
              read(buffer, *, iostat=ios) initf !initial setup of filaments   
           case ('scaling_factor')
              read(buffer, *, iostat=ios) scale_factor !for scaling random loops 
+          case ('loop_translate')
+             read(buffer, *, iostat=ios) loop_translate !for scaling random loops 
           case ('rotation_factor')
              read(buffer, *, iostat=ios) rotation_factor !for rotating random loops      
           case ('line_count')
