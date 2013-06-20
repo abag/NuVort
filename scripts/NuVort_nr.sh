@@ -35,31 +35,27 @@ do
   esac
 done
 #THE MOST IMPORTANT LINE IN THIS SCRIPT MAKE SURE IT IS SET CORRECTLY
-PRJ_HOME=${HOME}/qvort
+PRJ_HOME=~/Work/code/NuVort
 #i will check it at least exists
 if [ ! -d "$PRJ_HOME" ]; then
-  echo "arghhhh, qvort home directory does not exist!!"
+  echo "arghhhh, NuVort home directory does not exist!!"
   exit 1
 fi
 #now I will check if it is incorrectly assigned
-if [ ! -f "$PRJ_HOME/Doxyfile" ] ; then
-  echo "the directory you have set as qvort's home exists but is incorrect..."
-  exit 1
-fi
 if [ ! -f "$PRJ_HOME/run.sh" ] ; then
-  echo "the directory you have set as qvort's home exists but is incorrect..."
+  echo "the directory you have set as NuVort's home exists but is incorrect..."
   exit 1
 fi
-#if [ ! -f "$PRJ_HOME/README.md" ] ; then
-#  echo "the directory you have set as qvort's home exists but is incorrect..."
-#  exit 1
-#fi
+if [ ! -f "$PRJ_HOME/README.md" ] ; then
+  echo "the directory you have set as NuVort's home exists but is incorrect..."
+  exit 1
+fi
 if [ ! -f "$PRJ_HOME/run.in" ] ; then
-  echo "the directory you have set as qvort's home exists but is incorrect..."
+  echo "the directory you have set as NuVort's home exists but is incorrect..."
   exit 1
 fi
 if [ ! -f "$PRJ_HOME/startup.m" ] ; then
-  echo "the directory you have set as qvort's home exists but is incorrect..."
+  echo "the directory you have set as NuVort's home exists but is incorrect..."
   exit 1
 fi
 #where are we?
@@ -97,9 +93,9 @@ if [ ! -f "startup.m" ]; then
   echo "%to plot a single snapshot run vortex_plot(filenumber)" > startup.m
   echo "%e.g. vortex_plot(1)" >> startup.m
   echo "%to get time series information run ts" >>startup.m
-  echo "disp('adding all qvort paths')" >>startup.m
+  echo "disp('adding all NuVort paths')" >>startup.m
   echo "addpath(genpath('$PRJ_HOME'))" >>startup.m
   echo "disp('type help startup to get simple plotting commands for qvort')" >>startup.m
-  echo "successfully cloned qvort to $rundir"
+  echo "successfully cloned NuVortto $rundir"
 fi
 
