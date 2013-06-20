@@ -39,6 +39,7 @@ module diagnostic
       else
         curvi(i)=curvature(i) !general.mod
       end if
+      f(i)%curv=curvi(i) !store this for printing
     end do
     !$omp end parallel do
     !compute the average/min/max of this array

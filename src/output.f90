@@ -10,8 +10,9 @@ module output
     implicit none
     open(unit=77,file='./data/dims.log',status='replace')
       write(77,*) delta, '%resolution - \delta' 
-      write(77,*) box_size, '%box size'
-      write(77,*) cylind_r, '%radius of cylinder'
+      write(77,*) box_size(1), '%x box size'
+      write(77,*) box_size(2), '%y box size'
+      write(77,*) box_size(3), '%z box size'
     close(77)
   end subroutine
   !**********************************************************************
@@ -55,13 +56,13 @@ remove_count, tree_eval
       write(98) f(:)%x(2)
       write(98) f(:)%x(3)
       write(98) f(:)%infront
-      write(98) sqrt(f(:)%u(1)**2+f(:)%u(2)**2+f(:)%u(3)**2)
-      write(98) f(:)%ghosti(1)
-      write(98) f(:)%ghosti(2)
-      write(98) f(:)%ghosti(3)
-      write(98) f(:)%ghostb(1)
-      write(98) f(:)%ghostb(2)
-      write(98) f(:)%ghostb(3)
+      write(98) f(:)%u(1)
+      write(98) f(:)%u(2)
+      write(98) f(:)%u(3)
+      write(98) f(:)%u_mf(1)
+      write(98) f(:)%u_mf(2)
+      write(98) f(:)%u_mf(3)
+      write(98) f(:)%curv
     close(98)
   end subroutine
   !**********************************************************************

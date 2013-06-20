@@ -78,7 +78,7 @@ module reconnection
       ! x - boundary
       !------------------------first check cartesian box---------------------
       if (boundary_x=='solid') then
-        if (f(i)%x(1)>0.5*(box_size-delta)) then
+        if (f(i)%x(1)>0.5*(box_size(1)-delta)) then
           pari=f(i)%infront ; parb=f(i)%behind !find particle infront/behind
           f(pari)%pinnedb=.true. ; f(pari)%behind=pari ; f(pari)%wpinned=(/1,0,0/)
           f(parb)%pinnedi=.true. ; f(parb)%infront=parb ; f(parb)%wpinned=(/1,0,0/)
@@ -87,7 +87,7 @@ module reconnection
           if (f(pari)%pinnedi.and.f(pari)%pinnedb) call clear_particle(pari)
           if (f(parb)%pinnedi.and.f(parb)%pinnedb) call clear_particle(parb)
           wall_recon_count=wall_recon_count+1 !keep track of the total # of wall recons
-        else if (f(i)%x(1)<-0.5*(box_size-delta)) then
+        else if (f(i)%x(1)<-0.5*(box_size(1)-delta)) then
           pari=f(i)%infront ; parb=f(i)%behind !find particle infront/behind
           f(pari)%pinnedb=.true. ; f(pari)%behind=pari ; f(pari)%wpinned=(/-1,0,0/) 
           f(parb)%pinnedi=.true. ; f(parb)%infront=parb ; f(parb)%wpinned=(/-1,0,0/)
@@ -100,7 +100,7 @@ module reconnection
       end if
       ! y - boundary
       if (boundary_y=='solid') then
-        if (f(i)%x(2)>0.5*(box_size-delta)) then
+        if (f(i)%x(2)>0.5*(box_size(2)-delta)) then
           pari=f(i)%infront ; parb=f(i)%behind !find particle infront/behind
           f(pari)%pinnedb=.true. ; f(pari)%behind=pari ; f(pari)%wpinned=(/0,1,0/)
           f(parb)%pinnedi=.true. ; f(parb)%infront=parb ; f(parb)%wpinned=(/0,1,0/)
@@ -109,7 +109,7 @@ module reconnection
           if (f(pari)%pinnedi.and.f(pari)%pinnedb) call clear_particle(pari)
           if (f(parb)%pinnedi.and.f(parb)%pinnedb) call clear_particle(parb)
           wall_recon_count=wall_recon_count+1 !keep track of the total # of wall recons
-        else if (f(i)%x(2)<-0.5*(box_size-delta)) then
+        else if (f(i)%x(2)<-0.5*(box_size(2)-delta)) then
           pari=f(i)%infront ; parb=f(i)%behind !find particle infront/behind
           f(pari)%pinnedb=.true. ; f(pari)%behind=pari ; f(pari)%wpinned=(/0,-1,0/) 
           f(parb)%pinnedi=.true. ; f(parb)%infront=parb ; f(parb)%wpinned=(/0,-1,0/)
@@ -122,7 +122,7 @@ module reconnection
       end if
       ! z - boundary
       if (boundary_z=='solid') then
-        if (f(i)%x(3)>0.5*(box_size-delta)) then
+        if (f(i)%x(3)>0.5*(box_size(3)-delta)) then
           pari=f(i)%infront ; parb=f(i)%behind !find particle infront/behind
           f(pari)%pinnedb=.true. ; f(pari)%behind=pari ;f(pari)%wpinned=(/0,0,1/) 
           f(parb)%pinnedi=.true. ; f(parb)%infront=parb ; f(parb)%wpinned=(/0,0,1/)
@@ -131,7 +131,7 @@ module reconnection
           if (f(pari)%pinnedi.and.f(pari)%pinnedb) call clear_particle(pari)
           if (f(parb)%pinnedi.and.f(parb)%pinnedb) call clear_particle(parb)
           wall_recon_count=wall_recon_count+1 !keep track of the total # of wall recons
-        else if (f(i)%x(3)<-0.5*(box_size-delta)) then
+        else if (f(i)%x(3)<-0.5*(box_size(3)-delta)) then
           pari=f(i)%infront ; parb=f(i)%behind !find particle infront/behind
           f(pari)%pinnedb=.true. ; f(pari)%behind=pari ;f(pari)%wpinned=(/0,0,-1/)
           f(parb)%pinnedi=.true. ; f(parb)%infront=parb ; f(parb)%wpinned=(/0,0,-1/)
@@ -141,19 +141,6 @@ module reconnection
           if (f(parb)%pinnedi.and.f(parb)%pinnedb) call clear_particle(parb)
           wall_recon_count=wall_recon_count+1 !keep track of the total # of wall recons
         end if 
-      end if
-      !------------------------now check for cylindrical case---------------------
-      if (cylindrical_boundaries) then 
-        if (get_radius(f(i)%x)>(cylind_r-0.5*delta)) then !if the radius is large enough reconnect with the wall
-          pari=f(i)%infront ; parb=f(i)%behind !find particle infront/behind
-          f(pari)%pinnedb=.true. ; f(pari)%behind=pari ;f(pari)%wpinned=(/1,1,0/) !use notation wpinned=(1,1,0)  
-          f(parb)%pinnedi=.true. ; f(parb)%infront=parb ; f(parb)%wpinned=(/1,1,0/)!to indicate pinned on cylinder
-          call clear_particle(i) !general.mod
-          !we must test if we have 'double pinned the particle infront or behind'
-          if (f(pari)%pinnedi.and.f(pari)%pinnedb) call clear_particle(pari)
-          if (f(parb)%pinnedi.and.f(parb)%pinnedb) call clear_particle(parb)
-          wall_recon_count=wall_recon_count+1 !keep track of the total # of wall recons
-        end if
       end if
     end do
   end subroutine

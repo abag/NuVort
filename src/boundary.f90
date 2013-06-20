@@ -30,26 +30,12 @@ module boundary
     real :: r_tmp
     if (f(i)%pinnedi) then
       gbehind(:)=f(f(i)%behind)%x(:)
-      if (sum(abs(f(i)%wpinned))==2) then
-        !spherical reflection
-        r_tmp=get_radius(f(f(i)%behind)%x)
-        ginfront(1:2)=f(f(i)%behind)%x(1:2)*(2*cylind_r-r_tmp)/r_tmp
-        ginfront(3)=f(f(i)%behind)%x(3)
-      else if (sum(abs(f(i)%wpinned))==1) then
         !cartesian reflection
         ginfront(:)=f(f(i)%behind)%x(:)+2*abs(f(i)%wpinned)*(0.5*f(i)%wpinned*box_size-f(f(i)%behind)%x(:))
-      end if
     else if (f(i)%pinnedb) then
       ginfront(:)=f(f(i)%infront)%x(:)
-      if (sum(abs(f(i)%wpinned))==2) then 
-        !spherical reflection
-        r_tmp=get_radius(f(f(i)%infront)%x)
-        gbehind(1:2)=f(f(i)%infront)%x(1:2)*(2*cylind_r-r_tmp)/r_tmp
-        gbehind(3)=f(f(i)%infront)%x(3)
-      else if (sum(abs(f(i)%wpinned))==1) then
         !cartesian reflection
         gbehind(:)=f(f(i)%infront)%x(:)+2*abs(f(i)%wpinned)*(0.5*f(i)%wpinned*box_size-f(f(i)%infront)%x(:))
-      end if
     else
       ginfront(:)=f(f(i)%infront)%x(:)
       gbehind(:)=f(f(i)%behind)%x(:)
@@ -58,41 +44,41 @@ module boundary
     if (boundary_x=='periodic') then
       !we must ensure that ginfront/gbehind is not on the other side of the box
       !---------------------x------------------------------
-      if ((f(i)%x(1)-ginfront(1))>(box_size/2.)) then
-        ginfront(1)=ginfront(1)+box_size
-      elseif ((f(i)%x(1)-ginfront(1))<(-box_size/2.)) then
-        ginfront(1)=ginfront(1)-box_size
+      if ((f(i)%x(1)-ginfront(1))>(box_size(1)/2.)) then
+        ginfront(1)=ginfront(1)+box_size(1)
+      elseif ((f(i)%x(1)-ginfront(1))<(-box_size(1)/2.)) then
+        ginfront(1)=ginfront(1)-box_size(1)
       end if
-      if ((f(i)%x(1)-gbehind(1))>(box_size/2.)) then
-        gbehind(1)=gbehind(1)+box_size
-      elseif ((f(i)%x(1)-gbehind(1))<(-box_size/2.)) then
-        gbehind(1)=gbehind(1)-box_size
+      if ((f(i)%x(1)-gbehind(1))>(box_size(1)/2.)) then
+        gbehind(1)=gbehind(1)+box_size(1)
+      elseif ((f(i)%x(1)-gbehind(1))<(-box_size(1)/2.)) then
+        gbehind(1)=gbehind(1)-box_size(1)
       end if
     end if
     if (boundary_y=='periodic') then
       !---------------------y------------------------------
-      if ((f(i)%x(2)-ginfront(2))>(box_size/2.)) then
-        ginfront(2)=ginfront(2)+box_size
-      elseif ((f(i)%x(2)-ginfront(2))<(-box_size/2.)) then
-        ginfront(2)=ginfront(2)-box_size
+      if ((f(i)%x(2)-ginfront(2))>(box_size(2)/2.)) then
+        ginfront(2)=ginfront(2)+box_size(2)
+      elseif ((f(i)%x(2)-ginfront(2))<(-box_size(2)/2.)) then
+        ginfront(2)=ginfront(2)-box_size(2)
       end if
-      if ((f(i)%x(2)-gbehind(2))>(box_size/2.)) then
-        gbehind(2)=gbehind(2)+box_size
-      elseif ((f(i)%x(2)-gbehind(2))<(-box_size/2.)) then
-        gbehind(2)=gbehind(2)-box_size
+      if ((f(i)%x(2)-gbehind(2))>(box_size(2)/2.)) then
+        gbehind(2)=gbehind(2)+box_size(2)
+      elseif ((f(i)%x(2)-gbehind(2))<(-box_size(2)/2.)) then
+        gbehind(2)=gbehind(2)-box_size(2)
       end if
     end if
     if (boundary_z=='periodic') then
       !---------------------z------------------------------
-      if ((f(i)%x(3)-ginfront(3))>(box_size/2.)) then
-        ginfront(3)=ginfront(3)+box_size
-      elseif ((f(i)%x(3)-ginfront(3))<(-box_size/2.)) then
-        ginfront(3)=ginfront(3)-box_size
+      if ((f(i)%x(3)-ginfront(3))>(box_size(3)/2.)) then
+        ginfront(3)=ginfront(3)+box_size(3)
+      elseif ((f(i)%x(3)-ginfront(3))<(-box_size(3)/2.)) then
+        ginfront(3)=ginfront(3)-box_size(3)
       end if
-      if ((f(i)%x(3)-gbehind(3))>(box_size/2.)) then
-        gbehind(3)=gbehind(3)+box_size
-      elseif ((f(i)%x(3)-gbehind(3))<(-box_size/2.)) then
-        gbehind(3)=gbehind(3)-box_size
+      if ((f(i)%x(3)-gbehind(3))>(box_size(3)/2.)) then
+        gbehind(3)=gbehind(3)+box_size(3)
+      elseif ((f(i)%x(3)-gbehind(3))<(-box_size(3)/2.)) then
+        gbehind(3)=gbehind(3)-box_size(3)
       end if
     end if
   end subroutine
@@ -112,46 +98,40 @@ module boundary
       if (f(i)%infront==0) cycle !empty particle
       !-------------x------------------  
       if (boundary_x=='periodic') then   
-        if (f(i)%x(1)>(box_size/2.)) then
-          f(i)%x(1)=f(i)%x(1)-box_size
-        else if (f(i)%x(1)<(-box_size/2.)) then
-          f(i)%x(1)=f(i)%x(1)+box_size
+        if (f(i)%x(1)>(box_size(1)/2.)) then
+          f(i)%x(1)=f(i)%x(1)-box_size(1)
+        else if (f(i)%x(1)<(-box_size(1)/2.)) then
+          f(i)%x(1)=f(i)%x(1)+box_size(1)
         end if
       end if
       !-------------y------------------
       if (boundary_y=='periodic') then
-        if (f(i)%x(2)>(box_size/2.)) then
-          f(i)%x(2)=f(i)%x(2)-box_size
-        else if (f(i)%x(2)<(-box_size/2.)) then
-          f(i)%x(2)=f(i)%x(2)+box_size
+        if (f(i)%x(2)>(box_size(2)/2.)) then
+          f(i)%x(2)=f(i)%x(2)-box_size(2)
+        else if (f(i)%x(2)<(-box_size(2)/2.)) then
+          f(i)%x(2)=f(i)%x(2)+box_size(2)
         end if
       end if
       !-------------z------------------
       if (boundary_z=='periodic') then
-        if (f(i)%x(3)>(box_size/2.)) then
-          f(i)%x(3)=f(i)%x(3)-box_size
-        else if (f(i)%x(3)<(-box_size/2.)) then
-          f(i)%x(3)=f(i)%x(3)+box_size
+        if (f(i)%x(3)>(box_size(3)/2.)) then
+          f(i)%x(3)=f(i)%x(3)-box_size(3)
+        else if (f(i)%x(3)<(-box_size(3)/2.)) then
+          f(i)%x(3)=f(i)%x(3)+box_size(3)
         end if
       end if
       !----------solid boundaries----------
       if (f(i)%pinnedi.or.f(i)%pinnedb) then
         !set the particle position back to the boundary 
-        if (sum(abs(f(i)%wpinned))==2) then
-          !set the radius to be cylind_r
-          r_store=get_radius(f(i)%x)
-          f(i)%x(1:2)=cylind_r*f(i)%x(1:2)/r_store
-        else if (sum(abs(f(i)%wpinned))==1) then
           !we use maxloc to find out if the particle is either
           !on the x,y or z boundaries
           pinned_component=maxloc(abs(f(i)%wpinned),1)
           !enforcing zero flux at boundaries
           if (f(i)%wpinned(pinned_component)>0) then
-            f(i)%x(pinned_component)=0.499999999*box_size
+            f(i)%x(pinned_component)=0.499999999*box_size(pinned_component)
           else if (f(i)%wpinned(pinned_component)<0) then
-            f(i)%x(pinned_component)=-0.499999999*box_size
+            f(i)%x(pinned_component)=-0.499999999*box_size(pinned_component)
           end if
-        end if
       end if
     end do
     !$omp end parallel do
@@ -163,25 +143,25 @@ module boundary
   subroutine create_periodic_loop_array 
     implicit none
     integer :: i, j, k
-    integer :: ii, jj, kk
+    real  :: ii, jj, kk
     integer :: counter=0
     n_periodic=3**n_periodic-1
     allocate(periodic_loop_array(n_periodic,3)) 
     do i=-1,1 ; do j=-1,1 ; do k=-1,1
       if (boundary_x=='periodic') then
-        ii=i 
+        ii=i*box_size(1)
       else
         if (i/=0) cycle
         ii=0
       end if  
       if (boundary_y=='periodic') then
-        jj=j
+        jj=j*box_size(2)
       else 
         if (j/=0) cycle
         jj=0
       end if 
       if (boundary_z=='periodic') then
-        kk=k
+        kk=k*box_size(3)
       else 
         if (k/=0) cycle
         kk=0

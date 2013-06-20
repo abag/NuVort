@@ -15,9 +15,9 @@ case 'empty'
 end
 A=load('./data/ts.log');
 dims=load('./data/dims.log');
-t=A(:,2) ; pcount=A(:,3) ; rcount=A(:,4) ; sep=A(:,5) ; l=A(:,6) ; 
-maxu=A(:,7) ; maxdu=A(:,8) ; curv=A(:,9) ; rmcount=A(:,10) ;
-density=l/(dims(2)^3) ; spacing=1./sqrt(density);
+t=A(:,2) ; pcount=A(:,3) ; rcount=A(:,4) ; wall_rcount=A(:,5) ; sep=A(:,6) ; l=A(:,7) ; 
+maxu=A(:,8) ; maxdu=A(:,9) ; curv=A(:,10) ; rmcount=A(:,11) ;
+density=l/(dims(2)*dims(3)*dims(4)) ; spacing=1./sqrt(density);
 
 switch option
   case 'print'

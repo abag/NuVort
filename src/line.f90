@@ -141,7 +141,7 @@ module line
       if (f(i)%infront==0) cycle !empty particle
       f(i)%closestd=100. !arbitrarily high
       !do not test pinned points
-      if ((f(j)%pinnedi).or.(f(j)%pinnedb)) cycle
+      if ((f(i)%pinnedi).or.(f(i)%pinnedb)) cycle
       do j=1, pcount
         if (f(j)%infront==0) cycle !empty particle
         if ((i/=j).and.(f(i)%infront/=j).and.(f(i)%behind/=j).and. &

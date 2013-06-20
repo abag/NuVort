@@ -36,14 +36,15 @@ module tree
   !>An array to set the main node of the tree and then call the recurisive 
   !>subroutine build_tree this is called in the main program
   subroutine construct_tree()
+    implicit none
+    real :: bsize !maximum of cartesian (box_size) dimensions
     allocate(vtree)
     allocate(vtree%parray(pcount))
     !set up the main node, not a 100% sure if this needs doing as will never 
     !be used for evaluations
-    !this needs to be changed so that we use tha maximum of box size or cylinder
-    !radius
-    vtree%posx=-box_size/2. ; vtree%posy=-box_size/2. ; vtree%posz=-box_size/2.
-    vtree%width=box_size
+    bsize=maxval(box_size)
+    vtree%posx=-bsize/2. ; vtree%posy=-bsize/2. ; vtree%posz=-bsize/2.
+    vtree%width=bsize
     vtree%pcount=pcount
     vtree%parray=f
     vtree%centx=sum(f(:)%x(1), mask=f(:)%infront>0)/count(mask=f(:)%infront>0)
@@ -286,6 +287,8 @@ module tree
            if (j==f(i)%behind) return
          end if
          if (dist<epsilon(0.)) then
+           print*, dist
+           print*, i, j
            call fatal_error('tree.mod:tree_walk', & 
            'singularity in BS (tree) velocity field - &
            this is normally caused by having recon_shots too large') !cdata.mod
@@ -385,180 +388,6 @@ module tree
        call tree_walk_mirror(i,vtree%ftl,reflect,u) ; call tree_walk_mirror(i,vtree%ftr,reflect,u)
        call tree_walk_mirror(i,vtree%bbl,reflect,u) ; call tree_walk_mirror(i,vtree%bbr,reflect,u)
        call tree_walk_mirror(i,vtree%btl,reflect,u) ; call tree_walk_mirror(i,vtree%btr,reflect,u)
-     end if 
-   end subroutine
-   !************************************************************************
-   !>get the tree code approximation to the biot savart integral, giving
-   !>the induced velocity at particle i due to all other vortices, also
-   !>accounts for the image vortices due to the image vortex in the cylinder
-   !>accepts an arguement shift, which allows you to shift the position of 
-   !>the vortices for periodic boundary conditions
-   recursive subroutine tree_walk_cylind(i,vtree,shift,u)
-     implicit none
-     integer, intent(IN) :: i
-     real, intent(IN) :: shift(3) !shift tree (periodicity)
-     type (node), pointer :: vtree !the tree
-     real :: u(3) !the velocity at particle i
-     real :: vect(3) !helper vector
-     real :: dist, theta !helper variables
-     real :: s_img(3), s_gi_img(3) !dummy variables
-     real :: a_bs, b_bs, c_bs, u_bs(3) !helper variables 
-     integer :: j=0 !the particle in the tree mesh
-     if (vtree%pcount==0) return !empty box no use
-     !work out distances opening angles etc. here
-     dist=sqrt((f(i)%x(1)-(vtree%centx+shift(1)))**2+&
-               (f(i)%x(2)-(vtree%centy+shift(2)))**2+&
-               (f(i)%x(3)-(vtree%centz+shift(3)))**2)
-     theta=vtree%width/dist !note dist not based on reflection
-     !for now just have simple test
-     if (vtree%pcount==1.or.theta<tree_theta) then!use the contribution of this cell
-       !do the image vortices first we must do a few additional tests
-       !------------------reflection in the cylinder-------------------
-       if (vtree%pcount==1) then!this will be particles very close to i
-         j=f(vtree%parray(1)%infront)%behind !get j from the parray 
-         if (maxval(abs(shift))<epsilon(0.)) then
-           !if the box has not been shifted (i.e. not periodic wrap) then
-           !we should not take the contribution from the desingularised part
-           if (sum(f(i)%wpinned)==2) then !this point is pinned to the cylinder
-             if ((f(i)%pinnedb).and.(i==j)) return!has already been used in the local part
-             if ((f(i)%pinnedi).and.(j==f(i)%behind)) return!has already been used in the local part
-           end if
-         end if
-       end if
-       s_img=vtree%vec_cent+vtree%circ+shift!the centre of mass of the cell + the periodic shift + ds
-       s_gi_img=vtree%vec_cent+shift !the centre of mass of the cell + the periodic shift
-       !now we must reflect s_img, s_gi_img in the cylinder
-       s_img(1:2)=s_img(1:2)*((cylind_r/get_radius(s_img))**2) 
-       s_gi_img(1:2)=s_gi_img(1:2)*((cylind_r/get_radius(s_gi_img))**2) 
-       !now we can take the contributions
-       a_bs=dist_gen_sq(f(i)%x,s_img) !distance squared between i and s_img
-       b_bs=2.*dot_product((s_img-f(i)%x),(s_gi_img-s_img))
-       c_bs=dist_gen_sq(s_img,s_gi_img) !distance sqd between s_img, s_gi_img
-       !add non local contribution to velocity vector
-       if (4*a_bs*c_bs-b_bs**2==0) return !avoid 1/0
-       u_bs=cross_product((s_img-f(i)%x),(s_gi_img-s_img))
-       u_bs=u_bs*quant_circ/((2*pi)*(4*a_bs*c_bs-b_bs**2))
-       u_bs=u_bs*((2*c_bs+b_bs)/sqrt(a_bs+b_bs+c_bs)-(b_bs/sqrt(a_bs)))
-       u=u+u_bs !add on the non-local contribution of j
-       tree_eval=tree_eval+1 !increment this counter
-       !------------------points inside the cylinder-------------------
-       if (vtree%pcount==1) then!this will be particles very close to i
-         !check that the particle is not itself or the particle behind
-         if (maxval(abs(shift))<epsilon(0.)) then
-           !if the box has not been shifted (i.e. not periodic wrap) then
-           !we should not take the contribution from the desingularised part
-           if (j==i) return
-           if (j==f(i)%behind) return
-         end if
-         if (dist<epsilon(0.)) then !safety test probably not needed in practice
-           call fatal_error('tree.mod:tree_walk', & 
-           'singularity in BS (tree) velocity field - &
-           this is normally caused by having recon_shots too large') !cdata.mod
-         end if
-       end if
-       vect(1)=((vtree%centx+shift(1))-f(i)%x(1)) 
-       vect(2)=((vtree%centy+shift(2))-f(i)%x(2)) 
-       vect(3)=((vtree%centz+shift(3))-f(i)%x(3))
-       a_bs=dist**2
-       b_bs=2.*dot_product(vect,vtree%circ)
-       c_bs=dot_product(vtree%circ,vtree%circ) 
-       if (4*a_bs*c_bs-b_bs**2<epsilon(0.)) return !avoid 1/0
-       u_bs=cross_product(vect,vtree%circ)
-       u_bs=u_bs*quant_circ/((2*pi)*(4*a_bs*c_bs-b_bs**2))
-       u_bs=u_bs*((2*c_bs+b_bs)/sqrt(a_bs+b_bs+c_bs)-(b_bs/sqrt(a_bs)))
-       u=u+u_bs
-       tree_eval=tree_eval+1 !increment this counter
-     else
-       !open the box up and use the child cells
-       call tree_walk_cylind(i,vtree%fbl,shift,u) ; call tree_walk_cylind(i,vtree%fbr,shift,u)
-       call tree_walk_cylind(i,vtree%ftl,shift,u) ; call tree_walk_cylind(i,vtree%ftr,shift,u)
-       call tree_walk_cylind(i,vtree%bbl,shift,u) ; call tree_walk_cylind(i,vtree%bbr,shift,u)
-       call tree_walk_cylind(i,vtree%btl,shift,u) ; call tree_walk_cylind(i,vtree%btr,shift,u)
-     end if 
-   end subroutine
-   !************************************************************************
-   !>get the tree code approximation to the biot savart integral, giving
-   !>the induced velocity at particle i due to all other vortices, also
-   !>accounts for the image vortices due to the image vortex in the cylinder
-   !>also reflect in the z direction to account for solid z boundaries
-   recursive subroutine tree_walk_cylind_mirror(i,vtree,reflect,u)
-     implicit none
-     integer, intent(IN) :: i
-     integer, intent(IN) :: reflect(3) !reflect tree (solid bc.)
-     type (node), pointer :: vtree !the tree
-     real :: u(3) !the velocity at particle i
-     real :: vect(3) !helper vector
-     real :: dist, theta !helper variables
-     real :: s_img(3), s_gi_img(3) !dummy variables
-     real :: a_bs, b_bs, c_bs, u_bs(3) !helper variables 
-     integer :: j=0 !the particle in the tree mesh
-     if (vtree%pcount==0) return !empty box no use
-     !work out distances opening angles etc. here
-     !reflect the centre of mass of cell to get an estimate of distance
-     vect=vtree%vec_cent+2*abs(reflect)*(0.5*reflect*box_size-vtree%vec_cent)
-     dist=dist_gen(f(i)%x,vect)
-     theta=vtree%width/dist !note dist not based on reflection in cylinder
-     !for now just have simple test
-     if (vtree%pcount==1.or.theta<tree_theta) then!use the contribution of this cell
-       !do the image vortices first no test needed
-       !------------------reflection in the z-------------------
-       s_img=vtree%vec_cent+vtree%circ!the centre of mass of the cell + ds
-       s_gi_img=vtree%vec_cent !the centre of mass of the cell
-       !now we must reflect s_img, s_gi_img in the cylinder
-       s_img(1:2)=s_img(1:2)*((cylind_r/get_radius(s_img))**2) 
-       s_gi_img(1:2)=s_gi_img(1:2)*((cylind_r/get_radius(s_gi_img))**2)
-       !now perform the reflection in the z axis
-       !axis and storing the results in s_img, s_gi_img 
-       s_gi_img=s_gi_img+2*abs(reflect)*(0.5*reflect*box_size-s_gi_img)
-       s_img=s_img+2*abs(reflect)*(0.5*reflect*box_size-s_img) 
-       !now we can take the contributions
-       a_bs=dist_gen_sq(f(i)%x,s_img) !distance squared between i and s_img
-       b_bs=2.*dot_product((s_img-f(i)%x),(s_gi_img-s_img))
-       c_bs=dist_gen_sq(s_img,s_gi_img) !distance sqd between s_img, s_gi_img
-       !add non local contribution to velocity vector
-       if (4*a_bs*c_bs-b_bs**2==0) return !avoid 1/0
-       u_bs=cross_product((s_img-f(i)%x),(s_gi_img-s_img))
-       u_bs=u_bs*quant_circ/((2*pi)*(4*a_bs*c_bs-b_bs**2))
-       u_bs=u_bs*((2*c_bs+b_bs)/sqrt(a_bs+b_bs+c_bs)-(b_bs/sqrt(a_bs)))
-       u=u+u_bs !add on the non-local contribution of j
-       tree_eval=tree_eval+1 !increment this counter
-       !------------------points inside the cylinder-------------------
-       if (vtree%pcount==1) then!this will be particles very close to i
-         j=f(vtree%parray(1)%infront)%behind !get j from the parray 
-         !we should not take the contribution from the desingularised part
-         if ((sum(f(i)%wpinned-reflect)==0).and.(sum(f(i)%wpinned)<2)) then
-           if ((f(i)%pinnedb).and.(i==j)) return!has already been used in the local part
-           if ((f(i)%pinnedi).and.(j==f(i)%behind)) return!has already been used in the local part
-         end if 
-         if (dist<epsilon(0.)) then !safety test probably not needed in practice
-           print*, i, j
-           call fatal_error('tree.mod:tree_walk', & 
-           'singularity in BS (tree) velocity field - &
-           this is normally caused by having recon_shots too large') !cdata.mod
-         end if
-       end if
-       s_img=vtree%vec_cent+vtree%circ!the centre of mass of the cell + ds
-       s_gi_img=vtree%vec_cent !the centre of mass of the cell
-       !reflect in z-axis and overwrite the results in s_gi_img, s_img respectively
-       s_gi_img=s_gi_img+2*abs(reflect)*(0.5*reflect*box_size-s_gi_img)
-       s_img=s_img+2*abs(reflect)*(0.5*reflect*box_size-s_img)
-       !now we can take the contributions
-       a_bs=dist_gen_sq(f(i)%x,s_img) !distance squared between i and s_img
-       b_bs=2.*dot_product((s_img-f(i)%x),(s_gi_img-s_img))
-       c_bs=dist_gen_sq(s_img,s_gi_img) !distance sqd between s_img, s_gi_img
-       !add non local contribution to velocity vector
-       if (4*a_bs*c_bs-b_bs**2==0) return !avoid 1/0
-       u_bs=cross_product((s_img-f(i)%x),(s_gi_img-s_img))
-       u_bs=u_bs*quant_circ/((2*pi)*(4*a_bs*c_bs-b_bs**2))
-       u_bs=u_bs*((2*c_bs+b_bs)/sqrt(a_bs+b_bs+c_bs)-(b_bs/sqrt(a_bs)))
-       u=u+u_bs !add on the non-local contribution of j
-       tree_eval=tree_eval+1 !increment this counter
-     else
-       !open the box up and use the child cells
-       call tree_walk_cylind_mirror(i,vtree%fbl,reflect,u) ; call tree_walk_cylind_mirror(i,vtree%fbr,reflect,u)
-       call tree_walk_cylind_mirror(i,vtree%ftl,reflect,u) ; call tree_walk_cylind_mirror(i,vtree%ftr,reflect,u)
-       call tree_walk_cylind_mirror(i,vtree%bbl,reflect,u) ; call tree_walk_cylind_mirror(i,vtree%bbr,reflect,u)
-       call tree_walk_cylind_mirror(i,vtree%btl,reflect,u) ; call tree_walk_cylind_mirror(i,vtree%btr,reflect,u)
      end if 
    end subroutine
 end module

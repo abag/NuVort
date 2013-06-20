@@ -42,6 +42,14 @@ module general
             (f(i)%x(3)-f(j)%x(3))**2
   end function
   !*********************************************************************
+  !>calculate hyperbolic cosine (cosh) of input x
+  real function cosh(x)
+    use Cdata
+    implicit none
+    real, intent(IN) :: x
+    cosh=0.5*(exp(x)+exp(-x))
+  end function
+  !*********************************************************************
   !>calculate the curvature at the particle i: \f$|\mathbf{s}''|\f$
   real function curvature(i)
     use Cdata

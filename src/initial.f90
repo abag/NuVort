@@ -34,8 +34,8 @@ module initial
     write(*,'(a,i3.2,a)') ' outputting filament information every ', shots, ' time-steps'
     !periodic bounday conditions?
     write(*,'(a)') ' ---------------------BOUNDARY CONDITIONS--------------------' 
-    if (box_size>0.) then
-      write(*,'(a,f8.3)') ' box size:', box_size
+    if (minval(box_size)>0.) then
+      write(*,'(a,3f8.3)') ' box size:', box_size
       !what is the boundary
       select case(boundary_x)
         case('periodic')
@@ -46,24 +46,6 @@ module initial
         case('solid')
           write(*,'(a)') ' boundary x: solid'
           n_mirror=n_mirror+1
-        case('cylind')
-          !check the y boundary is also set to cylinder
-          if (boundary_y/='cylind') call fatal_error('init_setup:',&
-          'boundary_y must also be set to cylind')
-          !now check that the cylinder radius has been set
-          if (cylind_r>epsilon(0.)) then
-            if ((cylind_r>=box_size/2.).and.(tree_theta>0.)) then
-              !we need to improve tree algorithm to avoid this
-              call fatal_error('init.mod','you must set cylind_r<box_size/2')
-            end if
-            write(*,'(a)') ' boundary x/y: running with cylindrical boundary'
-            write(*,'(a,f9.4)') ' radius of cylinder: ', cylind_r
-            !to speed up logical evaluations if we are running with cylindrical 
-            !boundaries we activate the following logical variable
-            cylindrical_boundaries=.true.
-          else
-            call fatal_error('init_setup:', 'cylinder radius not set')
-          end if
         case default
           call fatal_error('init_setup:', 'incorrect boundary_x parameter')
       end select
@@ -76,10 +58,6 @@ module initial
         case('solid')
           write(*,'(a)') ' boundary y: solid'
           n_mirror=n_mirror+1
-        case('cylind')
-          !check the x boundary is also set to cylinder
-          if (boundary_x/='cylind') call fatal_error('init_setup:',&
-          'boundary_x must also be set to cylind')
         case default
           call fatal_error('init_setup:', 'incorrect boundary_y parameter')
       end select
@@ -117,6 +95,10 @@ module initial
           call setup_random_loops !initial_loop.mod
         case('half_loop')
           call setup_half_loop !initial_loop.mod
+        case('half_loopz')
+          call setup_half_loopz !initial_loop.mod
+        case('hayder_wave')
+          call setup_hayder_wave !initial_cond.mod
         case default
           call fatal_error('cdata.mod:init_setup', &
                          'invalid choice for initf parameter') !cdata.mod
@@ -153,7 +135,9 @@ module initial
     else
       write(*,*) 'using brute force reconnection routine - scales like O(N^2)'
     end if
-    write(*,'(a)') ' --------------------NORMAL FLUID--------------------' 
+    write(*,'(a)') ' --------------------EXTERNAL SUPER FLOW--------------------'
+    write(*,'(a,3f8.4)'), ' u_sup^ext=',super_velocity
+    write(*,'(a)') ' --------------------NORMAL FLUID--------------------'
     call setup_normal_fluid !normal_fluid.mod
   end subroutine
   !**********************************************************************
@@ -182,7 +166,7 @@ module initial
     implicit none
     real :: delta_min, dt_max
     delta_min=delta/2.
-    dt_max=((delta_min)**2)/(quant_circ*log(delta_min*1E8/pi))
+    dt_max=abs(((delta_min)**2)/(quant_circ*log(delta_min/(pi*corea))))
     if (dt<dt_max) then
       write(*,'(a,e10.4)') ' dt is below maximum possible dt:', dt_max
     else

@@ -1,7 +1,7 @@
 function vortex_load(filenumber)
-global dims
+global dims box_size
 global x y z
-global f u
+global f u u_mf v_curv
 global number_of_particles
 %check filenumber has been set
 if exist('filenumber')==0
@@ -12,6 +12,7 @@ end
 filename=sprintf('data/var%04d.log',filenumber);
 %get the dimensions information from dims.log
 dims=load('./data/dims.log');
+box_size=dims(2:4);
 fid=fopen(filename);
 if fid<0
   disp('var file does not exist, exiting script')
@@ -23,5 +24,16 @@ x=fread(fid,number_of_particles,'float64');
 y=fread(fid,number_of_particles,'float64');
 z=fread(fid,number_of_particles,'float64');
 f=fread(fid,number_of_particles,'int');
-u=fread(fid,number_of_particles,'float64');
+ux=fread(fid,number_of_particles,'float64');
+uy=fread(fid,number_of_particles,'float64');
+uz=fread(fid,number_of_particles,'float64');
+u_mf_x=fread(fid,number_of_particles,'float64');
+u_mf_y=fread(fid,number_of_particles,'float64');
+u_mf_z=fread(fid,number_of_particles,'float64');
+v_curv=fread(fid,number_of_particles,'float64');
+%now create arrays for u and u_mf
+u=sqrt(ux.^2+uy.^2+uz.^2);
+u_mf=sqrt(u_mf_x.^2+u_mf_y.^2+u_mf_z.^2);
+
+
 

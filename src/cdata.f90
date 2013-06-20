@@ -18,7 +18,8 @@ module cdata
   !!@param wpinned which boundary are we pinned to ?
   type qvort 
     real :: x(3)
-    real :: u(3), u1(3), u2(3)
+    real :: u(3), u1(3), u2(3), u_mf(3)
+    real :: curv
     real :: ghosti(3), ghostb(3)
     integer :: infront, behind 
     integer :: closest
@@ -75,7 +76,7 @@ module cdata
   real, protected ::  delta
   !>timestep
   real :: dt
-  real, protected :: box_size=0., cylind_r=0.
+  real, protected :: box_size(3)=0. !vector for x,y,z
   real, protected :: quant_circ=9.97E-4 !He-4 by default
   real , protected :: corea=8.244023E-9 !He-4 by default
   !>are boundaries periodic, open or solid?  
@@ -83,10 +84,9 @@ module cdata
   character(len=40) :: boundary_y='periodic'
   character(len=40) :: boundary_z='periodic'
   integer :: n_periodic=0 !number of periodic dimensions
-  integer, allocatable :: periodic_loop_array(:,:)
+  real, allocatable :: periodic_loop_array(:,:)
   integer :: n_mirror=0 !number of solid dimensions
   integer, allocatable :: mirror_loop_array(:,:)
-  logical :: cylindrical_boundaries=.false. !used if we have cylindrical boundaries
   !key arguements that must be set
   character(len=30), protected :: velocity, initf, boundary
   !order of derivatives
@@ -94,17 +94,23 @@ module cdata
   integer, protected :: line_count=1
   real, protected :: scale_factor=1 ! in terms of box size
   real, protected :: rotation_factor=1 !1=2*pi, 0=0
-  !how much we translate random_loops initial condition by 
+  !how much we translate random_loops initial condition by
+  real, protected :: wave_amp=1 !amplitude of waves 
   real, protected :: loop_translate(3)=1.!for separate xyz components
   !--------the following parameters add special features-------------------------
   !---------------------tree-algorithm-------------------------------------------
   real, protected :: tree_theta=0.
   logical, protected :: tree_print=.false.
   logical, protected :: tree_extra_correction=.true.
+  !-------------external superflow----------------------------
+  real :: super_velocity(3)=0. !just an imposed constant flow at present
   !------------normal fluid component--------------------------------------------
   character(len=30), protected :: normal_velocity='zero'
   real, protected :: alpha(2)=0. !mutual friction coefficients
   real, protected :: norm_vel_xflow=0.5
+  real, protected :: normal_fluid_cutoff=1E8 !impossibly high time
+  real, protected :: t_zero_normal_fluid=1E8 !impossibly high time
+  real, protected :: norm_shear_omega=0.
   !----------------------------code testing---------------------------------------
   logical, protected :: NAN_test=.true.!test for NANs in arrays
   logical, protected :: overide_timestep_check=.false.!do not perform initial dt test
@@ -166,10 +172,8 @@ module cdata
           case ('corea')
              read(buffer, *, iostat=ios) corea !size of vortex core
           case ('box_size')
-             !size of box must be>0, real number
+             !size of box must be>0, 3 vector number
              read(buffer, *, iostat=ios) box_size !size of periodic box
-          case ('cylind_r')
-             read(buffer, *, iostat=ios) cylind_r !radius of cylinder
           case ('velocity')
              !velocity field options are LIA, BS, Tree
              read(buffer, *, iostat=ios) velocity !BS/LIA/Tree
@@ -186,11 +190,17 @@ module cdata
           case ('tree_extra_correction')
              read(buffer, *, iostat=ios) tree_extra_correction !extra correction suggested by B&H
           case ('normal_velocity')
-             read(buffer, *, iostat=ios) normal_velocity !zero/xflow/ABC/KS   
+             read(buffer, *, iostat=ios) normal_velocity !zero/xflow/ABC/KS  
+          case ('normal_fluid_cutoff')
+             read(buffer, *, iostat=ios) normal_fluid_cutoff !turn off nf
+          case ('t_zero_normal_fluid')
+             read(buffer, *, iostat=ios) t_zero_normal_fluid !zero nf
           case ('norm_vel_xflow')
              read(buffer, *, iostat=ios) norm_vel_xflow !counterflow velocity       
           case ('alpha')
              read(buffer, *, iostat=ios) alpha !mutual friction
+          case ('super_velocity')
+              read(buffer, *, iostat=ios) super_velocity !external superfluid vel.
           case ('initf')
              read(buffer, *, iostat=ios) initf !initial setup of filaments   
           case ('scaling_factor')
@@ -211,6 +221,10 @@ module cdata
              read(buffer, *, iostat=ios) serial_run !do not run in parallel
           case ('qvort_nproc')
              read(buffer, *, iostat=ios) qvort_nproc !specify number of processes
+          case ('wave_amp')
+             read(buffer, *, iostat=ios) wave_amp !specify wave amp
+          case ('norm_shear_omega')
+             read(buffer, *, iostat=ios) norm_shear_omega !frequency for xflow_shear nf
           case default
              !print *, 'Skipping invalid label at line', line
           end select
