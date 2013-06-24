@@ -1,11 +1,11 @@
-function N=vortex_density(filenumber,varargin)
+function vortex_continuum(filenumber,varargin)
 global dims box_size
 global x y z
 global f u u2 v_curv u_mf
 global u_mf_x u_mf_y u_mf_z
 global ux uy uz
 global number_of_particles
-global Density
+global Density Curv Friction allFriction Velocity allVelocity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 vortex_load(filenumber)
 p = inputParser;
