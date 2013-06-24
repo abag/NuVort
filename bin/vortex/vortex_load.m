@@ -3,6 +3,8 @@ global dims box_size
 global x y z
 global f u u_mf v_curv
 global number_of_particles
+global u_mf_x u_mf_y u_mf_z
+global ux uy uz
 %check filenumber has been set
 if exist('filenumber')==0
   disp('you have not set filnumber')
