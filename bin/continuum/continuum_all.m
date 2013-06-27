@@ -4,28 +4,31 @@ if nargin==1
 end
 global dims box_size
 global Density Curv Friction allFriction Velocity allVelocity
+global GDensity GCurv GFriction GallFriction GVelocity GallVelocity
+global N
 GDensity(1:N,1:N,1:N)=0.;
 GCurv(1:N,1:N,1:N)=0.;
 GFriction(1:N,1:N,1:N)=0.;
 GallFriction(1:N,1:N,1:N,1:3)=0.;
 GVelocity(1:N,1:N,1:N)=0.;
 GallVelocity(1:N,1:N,1:N,1:3)=0.;
-xbox=-box_size(1)/2:box_size(1)/N:box_size(1)/2;
-ybox=-box_size(2)/2:box_size(2)/N:box_size(2)/2;
-zbox=-box_size(3)/2:box_size(3)/N:box_size(3)/2;
 for i=files
   vortex_continuum(i,'N',N)
   GDensity=GDensity+Density;
+  GCurv=GCurv+Curv ; 
   GFriction=GFriction+Friction;
   GallFriction=GallFriction+allFriction;
   GVelocity=GVelocity+Velocity;
   GallVelocity=GallVelocity+allVelocity;
 end
 GDensity=GDensity/length(files);
+GCurv=GCurv/length(files);
 GFriction=GFriction/length(files);
 GallFriction=GallFriction/length(files);
 GVelocity=GVelocity/length(files);
 GallVelocity=GallVelocity/length(files);
+
+return
 %-------------plots---------------------
 figure('Name','vortex density in xz-plane')
 pcolor(xbox(1:N),zbox(1:N),squeeze(sum(GDensity,2))') ; shading interp
