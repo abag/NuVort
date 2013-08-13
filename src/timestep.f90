@@ -41,6 +41,7 @@ module timestep
       f(i)%u1(:)=f(i)%u(:)
     end do
     !$omp end parallel do
+    call randomise_normal_fluid !normal_fluid
   end subroutine
   !*************************************************
   !>get the velocity of each particle subject to the superfluid velocity
@@ -135,7 +136,7 @@ module timestep
         f(i)%u_mf=u_mf !store it for printing
       end if
     end if
-    !u=u+super_velocity
+    u=u+super_velocity
   end subroutine
   !**************************************************************************
   !>the desingularised biot savart integral

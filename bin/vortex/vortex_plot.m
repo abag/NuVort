@@ -4,6 +4,7 @@ function vortex_plot(filenumber,varargin)
 global dims box_size
 global x y z
 global f u u_mf v_curv
+global ux uy uz
 global number_of_particles
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 p = inputParser;
@@ -16,6 +17,7 @@ p.addParamValue('LineStyle','-', @ischar);
 p.addParamValue('MarkerColor','k', @ischar);
 p.addParamValue('OverHead','off', @ischar);
 p.addParamValue('Annotate','off', @ischar);
+p.addParamValue('yBoundary','off', @ischar);
 parse(p,varargin{:});
 if p.Results.Views~=[1 2 4]
   disp('Views must be set to either 1,2 or 4')
@@ -32,6 +34,31 @@ if strcmp(p.Results.LineColor,'velocity')
   rainbow_scale=199/max(u) ;
   u=u*rainbow_scale;
   rainbow_val=u;
+  rainbowcmap=colormap(jet(200)); 
+  rainbow=1;
+elseif strcmp(p.Results.LineColor,'velocityx')
+  %scale velocity into a colormap
+  store_caxis=([min(ux) max(ux)]);
+  ux=ux-min(ux);
+  rainbow_scale=199/max(ux) ;
+  ux=ux*rainbow_scale;
+  rainbow_val=ux;
+  rainbowcmap=colormap(jet(200)); 
+  rainbow=1;
+elseif strcmp(p.Results.LineColor,'velocityy')
+  store_caxis=([min(uy) max(uy)]);
+  uy=uy-min(uy);
+  rainbow_scale=199/max(uy) ;
+  uy=uy*rainbow_scale;
+  rainbow_val=uy;
+  rainbowcmap=colormap(jet(200)); 
+  rainbow=1;
+elseif strcmp(p.Results.LineColor,'velocityz')
+  store_caxis=([min(uz) max(uz)]);
+  uz=uz-min(uz);
+  rainbow_scale=199/max(uz) ;
+  uz=uz*rainbow_scale;
+  rainbow_val=uz;
   rainbowcmap=colormap(jet(200)); 
   rainbow=1;
 elseif strcmp(p.Results.LineColor,'friction')
@@ -65,13 +92,15 @@ for v=1:(p.Results.Views)
       dummy_x(2,3)=z(round(f(j)));
       dist=sqrt((dummy_x(1,1)-dummy_x(2,1))^2+(dummy_x(1,2)-dummy_x(2,2))^2+(dummy_x(1,3)-dummy_x(2,3))^2);
       if (dist<0.5*min(box_size))
+        %if abs(y(j)-dims(3)/2.)<0.25 || abs(y(j)+dims(3)/2.)<0.25
         if rainbow
           plot3(dummy_x(1:2,1),dummy_x(1:2,2),dummy_x(1:2,3),p.Results.LineStyle,'LineWidth',p.Results.LineWidth,...
             'Color',rainbowcmap(max(1,ceil(rainbow_val(j))),:),'MarkerFaceColor',p.Results.MarkerColor,'MarkerEdgeColor',p.Results.MarkerColor)
         else
           plot3(dummy_x(1:2,1),dummy_x(1:2,2),dummy_x(1:2,3),p.Results.LineStyle,'LineWidth',p.Results.LineWidth,...
             'Color',p.Results.LineColor,'MarkerFaceColor',p.Results.MarkerColor,'MarkerEdgeColor',p.Results.MarkerColor)
-        end
+        %end
+        end 
         hold on
       end
     end

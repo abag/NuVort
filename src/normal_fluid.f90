@@ -26,6 +26,9 @@ module normal_fluid
     !>the normal fluid mesh
     type(norm_fluid_grid), allocatable, private :: nfm(:,:,:)
     real, allocatable, private :: laizet_u(:,:,:,:)
+    real, allocatable, private :: xflow_noise(:)
+    integer, private :: xflow_noise_size=100000
+    integer, private :: xflow_noise_counter=1
     real, allocatable, private :: xp(:),yp(:),zp(:)
     contains 
     !************************************************************
@@ -44,6 +47,12 @@ module normal_fluid
         case('channel')
           write(*,*) 'channel flow with scaling amplitude A'
           write(*,'(a,f6.3,a,f6.3)') ' A= ', norm_vel_xflow
+          call setup_gen_normalf !normal_fluid.mod
+        case('noisey_xflow')
+          write(*,*) 'noisey counter flow with scaling amplitude A'
+          write(*,'(a,f6.3,a,f6.3)') ' A= ', norm_vel_xflow
+          write(*,*) 'loading in noise from:  ', noise_file
+          call load_noise  !normal_fluid.mod
           call setup_gen_normalf !normal_fluid.mod
         case('ychannel')
           write(*,*) 'y channel flow in x direction with scaling amplitude A'
@@ -82,6 +91,9 @@ module normal_fluid
           u=0. ! no flow
         case('xflow')
           u=0. ; u(1)=norm_vel_xflow !flow in the x direction
+        case('noisey_xflow')
+          u=0. ; u(1)=xflow_noise(xflow_noise_counter)*norm_vel_xflow
+          !print*, u,xflow_noise_counter
         case('shear_xflow')
           u=0. ; u(1)=norm_vel_xflow*sin(2*pi*x(3)/box_size(3)+t*norm_shear_omega) !flow in the x direction
         case('ychannel')
@@ -133,6 +145,14 @@ module normal_fluid
         write(92) nfm(:,:,:)%u(2)
         write(92) nfm(:,:,:)%u(3)
       close(92)
+    end subroutine
+    !**********************************************************
+    subroutine load_noise
+      implicit none
+      allocate(xflow_noise(xflow_noise_size))
+      open(unit=37,file=noise_file)
+        read(37,*) xflow_noise
+      close(37)
     end subroutine
     !**********************************************************
     subroutine setup_laizet
@@ -218,6 +238,15 @@ module normal_fluid
       u=c0*(1-zd)+c1*zd
       !print*, 'interp', u
       !print*, 'nn', laizet_u(nx,ny,nz,:)
+    end subroutine
+    !**********************************************************
+    subroutine randomise_normal_fluid
+      implicit none
+      select case(normal_velocity)
+        case('noisey_xflow')
+        xflow_noise_counter=xflow_noise_counter+1 !increment counter
+        if (xflow_noise_counter>xflow_noise_size) xflow_noise_counter=1 !reset
+      end select
     end subroutine
 end module
 

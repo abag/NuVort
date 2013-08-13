@@ -33,6 +33,7 @@ u_mf_x=fread(fid,number_of_particles,'float64');
 u_mf_y=fread(fid,number_of_particles,'float64');
 u_mf_z=fread(fid,number_of_particles,'float64');
 v_curv=fread(fid,number_of_particles,'float64');
+fclose(fid);
 %now create arrays for u and u_mf
 u=sqrt(ux.^2+uy.^2+uz.^2);
 u_mf=sqrt(u_mf_x.^2+u_mf_y.^2+u_mf_z.^2);

@@ -106,6 +106,7 @@ module cdata
   real :: super_velocity(3)=0. !just an imposed constant flow at present
   !------------normal fluid component--------------------------------------------
   character(len=30), protected :: normal_velocity='zero'
+  character(len=30), protected :: noise_file='set_me!'
   real, protected :: alpha(2)=0. !mutual friction coefficients
   real, protected :: norm_vel_xflow=0.5
   real, protected :: normal_fluid_cutoff=1E8 !impossibly high time
@@ -223,6 +224,8 @@ module cdata
              read(buffer, *, iostat=ios) qvort_nproc !specify number of processes
           case ('wave_amp')
              read(buffer, *, iostat=ios) wave_amp !specify wave amp
+          case ('noise_file')
+             read(buffer, *, iostat=ios) noise_file !specify noise_file
           case ('norm_shear_omega')
              read(buffer, *, iostat=ios) norm_shear_omega !frequency for xflow_shear nf
           case default
