@@ -180,8 +180,11 @@ module normal_fluid
       do i=1,84
         zp(i)=(i-1)*(1./84)*4*pi/3-4*pi/6
       end do
+      yp=yp/20 
+      xp=xp/20
+      zp=zp/20
       !check box size! - should be [4\pi,2,4\pi/3]
-      write(*,*) 'please check box sizes - it should be:  [4\pi,2,4\pi/3]'
+      write(*,*) 'please check box sizes - it should be:  [4\pi,2,4\pi/3]/20'
     end subroutine
     !**********************************************************
     subroutine laizet_interp(x,u)
