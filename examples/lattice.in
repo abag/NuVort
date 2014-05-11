@@ -1,0 +1,18 @@
+--------------required parameters------------
+nsteps 1000000
+shots 10
+pcount 4000
+dt 7.5E-5
+delta 0.002
+box_size 0.1 0.1 0.1
+velocity Tree
+initf tri_lattice
+lattice_ratio 0.45
+line_count 4
+boundary_x solid
+boundary_y solid
+boundary_z solid
+--------------optional parameters------------
+---delete all below for a 'standard' run-----
+tree_theta 0.3
+alpha 0.001 0.
