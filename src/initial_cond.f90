@@ -305,11 +305,11 @@ module initial_cond
         f(line_position)%x(2)=rad_shift_r(i)*sin(rad_shift_theta(i))
         f(line_position)%x(3)=box_size(3)/2.-box_size(3)*real(j-1)/(line_size-1)
         if(j==1) then
-          f(line_position)%pinnedb=.true. ; f(line_position)%behind=i
+          f(line_position)%pinnedb=.true. ; f(line_position)%behind=line_position
           f(line_position)%wpinned=(/0,0,1/)
           f(line_position)%infront=line_position+1
         else if (j==line_size) then
-          f(line_position)%pinnedi=.true. ; f(line_position)%infront=i
+          f(line_position)%pinnedi=.true. ; f(line_position)%infront=line_position
           f(line_position)%wpinned=(/0,0,-1/)
           f(line_position)%behind=line_position-1
         else
