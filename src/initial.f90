@@ -97,6 +97,10 @@ module initial
           call setup_half_loop !initial_loop.mod
         case('half_loopz')
           call setup_half_loopz !initial_loop.mod
+        case('square_lattice')
+          call setup_square_lattice !initial.mod
+        case('tri_lattice')
+          call setup_tri_lattice !initial.mod
         case('hayder_wave')
           call setup_hayder_wave !initial_cond.mod
         case default

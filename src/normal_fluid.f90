@@ -21,7 +21,7 @@ module normal_fluid
     end type
     !use the abbreviation nfm (normal fluid mesh)
     !>the size of the normal fluid mesh, put in run.in soon
-    integer, private, parameter :: nfm_size=128
+    integer, private, parameter :: nfm_size=64
     real, private :: nfm_res(3), nfm_inv_res(3) !resolution/inv resolution of normal fluid mesh
     !>the normal fluid mesh
     type(norm_fluid_grid), allocatable, private :: nfm(:,:,:)
@@ -61,6 +61,10 @@ module normal_fluid
         case('laizetDNS')
           write(*,*) "DNS from Sylvain's code"
           call  setup_laizet
+          call setup_gen_normalf !normal_fluid.mod
+        case('turbDNS')
+          write(*,*) "DNS from John Hopkins database"
+          call  setup_turbDNS
           call setup_gen_normalf !normal_fluid.mod
         case('zero')
         case default
@@ -107,6 +111,8 @@ module normal_fluid
           u(1)=norm_vel_xflow*(1.-(2*x(3)/box_size(3))**2+cossum)*1.2;
         case('laizetDNS')
           call laizet_interp(x,u)
+        case('turbDNS')
+          call turbDNS_interp(x,u)
       end select
       u=u+super_velocity
     end subroutine    
@@ -180,11 +186,40 @@ module normal_fluid
       do i=1,84
         zp(i)=(i-1)*(1./84)*4*pi/3-4*pi/6
       end do
-      yp=yp/20 
-      xp=xp/20
-      zp=zp/20
+      !yp=yp/20 
+      !xp=xp/20
+      !zp=zp/20
       !check box size! - should be [4\pi,2,4\pi/3]
       write(*,*) 'please check box sizes - it should be:  [4\pi,2,4\pi/3]/20'
+    end subroutine
+        !**********************************************************
+    subroutine setup_turbDNS
+      implicit none
+      integer :: i
+      allocate(laizet_u(256,256,256,3))
+      allocate(xp(256))
+      allocate(yp(256))
+      allocate(zp(256))
+      open(unit=37,file='./turbDNS.dat',form='unformatted',access='stream')
+        read(37) laizet_u(:,:,:,1)
+        read(37) laizet_u(:,:,:,2)
+        read(37) laizet_u(:,:,:,3)
+      close(37)
+      print*, 'max u velocity: ', maxval(laizet_u(:,:,:,1))
+      do i=1,256
+        xp(i)=(i-1)*(1./256)*box_size(1)-box_size(1)/2.
+        !xp(i)=(i-1)*(1./256)*2*pi-pi
+      end do
+      do i=1,256
+        yp(i)=(i-1)*(1./256)*box_size(2)-box_size(2)/2.
+        !yp(i)=(i-1)*(1./256)*2*pi-pi
+      end do
+      do i=1,256
+        zp(i)=(i-1)*(1./256)*box_size(3)-box_size(3)/2.
+        !zp(i)=(i-1)*(1./256)*2*pi-pi
+      end do
+      !laizet_u=laizet_u/10.
+      write(*,*) 'please check box sizes - it should be:  [2\pi,2\pi,2\pi]'
     end subroutine
     !**********************************************************
     subroutine laizet_interp(x,u)
@@ -229,6 +264,65 @@ module normal_fluid
       xd=(x(1)-xp(nx))/((1./128)*4*pi)
       yd=(x(2)-yp(ny))/(yp(nny)-yp(ny))
       zd=(x(3)-zp(nz))/((1./84)*4*pi/3)
+      !interpolate in x
+      c00=laizet_u(nx,ny,nz,:)*(1-xd)+laizet_u(nnx,ny,nz,:)*xd
+      c10=laizet_u(nx,nny,nz,:)*(1-xd)+laizet_u(nnx,nny,nz,:)*xd
+      c01=laizet_u(nx,ny,nnz,:)*(1-xd)+laizet_u(nnx,ny,nnz,:)*xd
+      c11=laizet_u(nx,nny,nnz,:)*(1-xd)+laizet_u(nnx,nny,nnz,:)*xd
+      !interpolate in y
+      c0=c00*(1-yd)+c10*yd
+      c1=c01*(1-yd)+c11*yd
+      !interpolate in z
+      u=c0*(1-zd)+c1*zd
+      !print*, 'interp', u
+      !print*, 'nn', laizet_u(nx,ny,nz,:)
+    end subroutine
+        !**********************************************************
+    subroutine turbDNS_interp(x,u)
+      implicit none
+      real, intent(IN) :: x(3)
+      real, intent(OUT) :: u(3)
+      real :: xd,yd,zd
+      real,dimension(3) :: c00,c10,c01,c11,c0,c1
+      integer :: nx, nnx, ny, nny, nz, nnz
+      !find nearest and next nearest points in x,y,z
+      !-------------X--------------
+      nx=minloc(abs(x(1)-xp),1)
+      if (x(1)>xp(nx)) then
+        nnx=nx+1
+      else
+        nx=nx-1
+        nnx=nx+1
+      end if
+      if (nnx==257) nnx=1 !periodicity
+      !-------------X--------------
+      ny=minloc(abs(x(2)-yp),1)
+      if (x(2)>yp(ny)) then
+        nny=ny+1
+      else
+        ny=ny-1
+        nny=ny+1
+      end if
+      if (nny==257) nny=1 !periodicity
+      !-------------Z--------------
+      nz=minloc(abs(x(3)-zp),1)
+      if (x(3)>zp(nz)) then
+        nnz=nz+1
+      else
+        nz=nz-1
+        nnz=nz+1
+      end if
+      if (nnz==257) nnz=1 !periodicity
+      !print*, 'x', xp(nx), x(1), xp(nnx)
+      !print*, 'y', yp(ny), x(2), yp(nny)
+      !print*, 'z', zp(nz), x(3), zp(nnz)
+      !now we can do the interpolation
+      xd=(x(1)-xp(nx))/((1./256)*box_size(1))
+      yd=(x(2)-yp(ny))/((1./256)*box_size(2))
+      zd=(x(3)-zp(nz))/((1./256)*box_size(3))
+      !xd=(x(1)-xp(nx))/((1./256)*2*pi)
+      !yd=(x(2)-yp(ny))/((1./256)*2*pi)
+      !zd=(x(3)-zp(nz))/((1./256)*2*pi)
       !interpolate in x
       c00=laizet_u(nx,ny,nz,:)*(1-xd)+laizet_u(nnx,ny,nz,:)*xd
       c10=laizet_u(nx,nny,nz,:)*(1-xd)+laizet_u(nnx,nny,nz,:)*xd

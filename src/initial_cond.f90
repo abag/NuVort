@@ -190,6 +190,138 @@ module initial_cond
     end do
   end subroutine
   !*************************************************************************
+  !*************************************************************************
+  !>lines from the lop of the box to the bottom arranged in a lattice, the number of
+  !>lines should be a square number
+  subroutine setup_square_lattice
+    implicit none
+    real :: xpos, ypos
+    integer :: pcount_required
+    integer :: line_size, line_position
+    integer :: counter=0
+    integer :: i, j, k
+    !test run.in parameters, if wrong program will exit
+    if (line_count==0) then
+      call fatal_error('init.mod:setup_lattice', &
+      'you have not set a value for line_count in run.in')
+    end if
+    select case(boundary_z)
+      case('periodic','solid')
+        !work out the number of particles required for single line
+        !given the box size specified in run.i
+        pcount_required=line_count*nint(box_size(3)/(.75*delta))
+        write(*,*) 'changing size of pcount to fit with box_length and delta'
+        write(*,'(a,i7.1)') ' pcount is now:', pcount_required
+        deallocate(f) ; pcount=pcount_required ; allocate(f(pcount))
+      case default
+        call fatal_error('init.mod:setup_lattice', &
+        'periodic boundary conditions in z required')
+    end select
+    write(*,'(a,i3.1,a)') ' drawing', line_count, ' lines from -z to +z'
+    write(*,'(a,f6.3,a)') ' lines in a lattice design occupying ', lattice_ratio, ' of    box area'
+    line_size=int(pcount/line_count)
+    !START THE LOOP
+    do i=1, floor(sqrt(real(line_count))) ; do k=1, floor(sqrt(real(line_count)))
+      xpos=(-box_size(1)/2.+box_size(1)*((2.*i-1.)/&
+           (2*sqrt(real(line_count)))))*lattice_ratio
+      ypos=(-box_size(2)/2.+box_size(2)*((2.*k-1.)/&
+           (2*sqrt(real(line_count)))))*lattice_ratio
+      do j=1, line_size
+        line_position=j+counter*line_size
+        f(line_position)%x(1)=xpos
+        f(line_position)%x(2)=ypos
+        f(line_position)%x(3)=box_size(3)/2.-box_size(3)*real(2*j-1)/(2.*line_size)
+        if(j==1) then
+          f(line_position)%behind=(counter+1)*line_size
+          f(line_position)%infront=line_position+1
+        else if (j==line_size) then
+          f(line_position)%behind=line_position-1
+                  f(line_position)%infront=counter*line_size+1
+        else
+          f(line_position)%behind=line_position-1
+          f(line_position)%infront=line_position+1
+        end if
+        f(line_position)%u1=0. ; f(line_position)%u2=0.
+      end do
+      counter=counter+1
+    end do ; end do
+    if (counter/=line_count) then
+      call fatal_error('init.mod:setup_lattice', &
+      'line_count must be a square number')
+    end if
+  end subroutine
+  !*************************************************************************
+  !*************************************************************************
+  !>lines from the lop of the box to the bottom arranged in a triangular lattice,
+  subroutine setup_tri_lattice
+    implicit none
+    real :: xpos, ypos
+    integer :: pcount_required
+    integer :: true_line_count
+    integer :: line_size, line_position
+    real, allocatable :: rad_shift_r(:), rad_shift_theta(:)
+    integer :: shift_help, shift_counter
+    integer :: counter=0
+    integer :: i, j, k
+    !test run.in parameters, if wrong program will exit
+    if (line_count==0) then
+      call fatal_error('init.mod:setup_lattice', &
+      'you have not set a value for line_count in run.in')
+    end if
+    !find the hexagonal number
+    true_line_count=3*line_count*(line_count-1)+1
+    select case(boundary_z)
+      case('periodic','solid')
+        !work out the number of particles required for single line
+        !given the box size specified in run.i
+        pcount_required=true_line_count*nint(box_size(3)/(.75*delta))
+        write(*,*) 'changing size of pcount to fit with box_length and delta'
+        write(*,'(a,i7.1)') ' pcount is now:', pcount_required
+        deallocate(f) ; pcount=pcount_required ; allocate(f(pcount))
+      case default
+        call fatal_error('init.mod:setup_lattice', &
+        'periodic boundary conditions in z required')
+    end select
+    write(*,'(a,i3.1,a)') ' drawing', true_line_count, ' lines from -z to +z'
+    write(*,'(a,f6.3,a)') ' lines in a triangular lattice design occupying ', lattice_ratio, ' of box area'
+    line_size=int(pcount/true_line_count)
+    !now we need to find shift values to create the torus
+    allocate(rad_shift_r(true_line_count),rad_shift_theta(true_line_count))
+    rad_shift_r(1)=0. ; rad_shift_theta(1)=0.
+    shift_counter=1
+    do i=2,line_count
+      do j=1,((i-1)*6)
+        shift_counter=shift_counter+1
+        rad_shift_theta(shift_counter)=2.*pi*real(j-1)/((i-1)*6)
+        rad_shift_r(shift_counter)=0.5*lattice_ratio*min(box_size(1),box_size(2))*&
+        (real(i-1)/(line_count-1))*cos(pi/6)/cos(mod(rad_shift_theta(shift_counter),2*pi/6)-pi/6)
+      end do
+    end do
+    !START THE LOOP
+    do i=1, true_line_count
+      do j=1, line_size
+        line_position=j+(i-1)*line_size
+        f(line_position)%x(1)=rad_shift_r(i)*cos(rad_shift_theta(i))
+        f(line_position)%x(2)=rad_shift_r(i)*sin(rad_shift_theta(i))
+        f(line_position)%x(3)=box_size(3)/2.-box_size(3)*real(j-1)/(line_size-1)
+        if(j==1) then
+          f(line_position)%pinnedb=.true. ; f(line_position)%behind=i
+          f(line_position)%wpinned=(/0,0,1/)
+          f(line_position)%infront=line_position+1
+        else if (j==line_size) then
+          f(line_position)%pinnedi=.true. ; f(line_position)%infront=i
+          f(line_position)%wpinned=(/0,0,-1/)
+          f(line_position)%behind=line_position-1
+        else
+          f(line_position)%behind=line_position-1
+          f(line_position)%infront=line_position+1
+        end if
+        f(line_position)%u1=0. ; f(line_position)%u2=0.
+      end do
+    end do
+    deallocate(rad_shift_r,rad_shift_theta)
+  end subroutine
+  !*************************************************************************
   !>lines from the lop of the box to the bottom, helical waves added 
   subroutine setup_hayder_wave
     implicit none

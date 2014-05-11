@@ -18,7 +18,7 @@ module cdata
   !!@param wpinned which boundary are we pinned to ?
   type qvort 
     real :: x(3)
-    real :: u(3), u1(3), u2(3), u_mf(3)
+    real :: u(3), u1(3), u2(3), u_mf(3), u_sup(3)
     real :: curv
     real :: ghosti(3), ghostb(3)
     integer :: infront, behind 
@@ -53,6 +53,8 @@ module cdata
   real :: maxu
   !>maximum velocity change - acceleration x dt 
   real :: maxdu
+  !--------normal vs superfluid velocities------
+  real :: mean_u_sup, mean_u_mf
   !>mean curvature
   real :: kappa_bar 
   real :: kappa_min, kappa_max !min/max curvature 
@@ -92,6 +94,7 @@ module cdata
   !order of derivatives
   !-----------arguements used by initial.mod/initial_cond.mod-------------
   integer, protected :: line_count=1
+  real, protected :: lattice_ratio=1
   real, protected :: scale_factor=1 ! in terms of box size
   real, protected :: rotation_factor=1 !1=2*pi, 0=0
   !how much we translate random_loops initial condition by
@@ -228,6 +231,8 @@ module cdata
              read(buffer, *, iostat=ios) noise_file !specify noise_file
           case ('norm_shear_omega')
              read(buffer, *, iostat=ios) norm_shear_omega !frequency for xflow_shear nf
+          case ('lattice_ratio')
+             read(buffer, *, iostat=ios) lattice_ratio !used in lattice initial conditions
           case default
              !print *, 'Skipping invalid label at line', line
           end select

@@ -26,6 +26,8 @@ module diagnostic
                     (f(:)%u1(3)-f(:)%u2(3))**2)
     maxu=maxval(uinfo(:,1)) ; maxdu=maxval(uinfo(:,2))
     deallocate(uinfo)
+    mean_u_sup=sum(sqrt(f(:)%u_sup(1)**2+f(:)%u_sup(2)**2+f(:)%u_sup(3)**2))/count(mask=f(:)%infront>0)
+    mean_u_mf=sum(sqrt(f(:)%u_mf(1)**2+f(:)%u_mf(2)**2+f(:)%u_mf(3)**2))/count(mask=f(:)%infront>0)
   end subroutine 
   !*************************************************
   !>caculate the mean, min, max curvature of the filament
