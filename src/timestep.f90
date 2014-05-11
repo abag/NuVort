@@ -120,6 +120,7 @@ module timestep
           end do 
           u=u+u_mir
     end select
+    f(i)%u_sup=u ! store superfluid velocity
     !-------------------------normal fluid--------------------------
     !check that either of the mutual friction coefficients are >0
     if ((abs(alpha(1))>epsilon(0.)).or.(abs(alpha(2))>epsilon(0.))) then

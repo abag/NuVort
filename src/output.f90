@@ -39,6 +39,8 @@ remove_count, tree_eval
     open(unit=79,file='data/curvature.log',position='append')
       write(79,*) kappa_bar, kappa_min, kappa_max
     close(79)
+    open(unit=79,file='data/super_vs_friction.log',position='append')
+      write(79,*) t, mean_u_sup, mean_u_mf
   end subroutine
   !**********************************************************************
   !>print the f (filament) array as (un)formatted data for use with gnuplot/matlab
