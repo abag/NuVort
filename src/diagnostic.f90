@@ -7,7 +7,7 @@ module diagnostic
   !>dummy routine to call all diagnostic routines
   subroutine calculate_diagnostics()
     implicit none
-    call friction_force
+    !call friction_force
     if (mod(itime, shots)==0) then
       call velocity_info !diagnostics.mod
       call curv_info !diagnostics.mod
@@ -52,6 +52,7 @@ module diagnostic
     kappa_min=minval(curvi,mask=curvi>0)
     deallocate(curvi) !deallocate helper array
   end subroutine
+  !*************************************************
   subroutine friction_force
     integer :: i
     real :: f_dot(3)  
