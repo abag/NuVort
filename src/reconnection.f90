@@ -43,6 +43,10 @@ module reconnection
           if (l_after<=l_before) then
             !reconnect the filaments
             recon_count=recon_count+1 !keep track of the total # of recons
+            !print the time of the recon and its location
+            open(unit=61,file='./data/recon_location.log',position='append')
+              write(61,*) t, 0.5*(f(i)%x+f(j)%x), acos(dot_val), (l_before-l_after)
+            close(61)
             !set correct behind_infront
             f(parjb)%infront=pari
             f(pari)%behind=parjb

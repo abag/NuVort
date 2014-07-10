@@ -65,6 +65,7 @@ remove_count, tree_eval
       write(98) f(:)%u_mf(2)
       write(98) f(:)%u_mf(3)
       write(98) f(:)%curv
+      write(98) f(:)%stretch
     close(98)
   end subroutine
   !**********************************************************************

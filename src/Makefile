@@ -61,5 +61,5 @@ line.o: line.f90 reconnection.o boundary.o general.o cdata.o
 #
 reconnection.o: reconnection.f90 general.o cdata.o
 #
-diagnostic.o: diagnostic.f90  general.o cdata.o
+diagnostic.o: diagnostic.f90  general.o cdata.o normal_fluid.o
 #

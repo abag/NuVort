@@ -19,7 +19,7 @@ module cdata
   type qvort 
     real :: x(3)
     real :: u(3), u1(3), u2(3), u_mf(3), u_sup(3)
-    real :: curv
+    real :: curv, stretch
     real :: ghosti(3), ghostb(3)
     integer :: infront, behind 
     integer :: closest
