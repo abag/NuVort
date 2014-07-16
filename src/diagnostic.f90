@@ -3,12 +3,14 @@ module diagnostic
   use cdata
   use general
   use normal_fluid
+  use boundary
   contains
   !>dummy routine to call all diagnostic routines
   subroutine calculate_diagnostics()
     implicit none
     !call friction_force
     if (mod(itime, shots)==0) then
+      call ghostp !boundary.mod
       call velocity_info !diagnostics.mod
       call curv_info !diagnostics.mod
       call stretching_rate !diagnostics.mod
@@ -57,20 +59,15 @@ module diagnostic
   !>caculate the mean, min, max curvature of the filament
   subroutine stretching_rate()
     implicit none
-    real :: disti, distb, du_dxi(3), s_dot(3)
+    real :: s_ddot(3)
     integer :: i, j
-    !$omp parallel do private(i,du_dxi,disti,distb,s_dot)
+    !$omp parallel do private(i,s_ddot)
     do i=1, pcount
       if (f(i)%infront==0) then
         f(i)%stretch=0. !check for 'empty' particles
       else
-        call get_deriv_1(i,s_dot) !sdot is the local tangent vector
-        disti=dist_gen(f(i)%x,f(i)%ghosti) ; distb=dist_gen(f(i)%x,f(i)%ghostb)
-        du_dxi(1:3)=distb*f(f(i)%infront)%u(1:3)+ &
-                (disti-distb)*f(i)%u(1:3)- &
-                 disti*f(f(i)%behind)%u(1:3)
-        du_dxi=du_dxi/(2.*distb*disti)
-        f(i)%stretch=dot_product(du_dxi,s_dot)
+        call get_deriv_2(i,s_ddot) !sdot is the local tangent vector
+        f(i)%stretch=dot_product(f(i)%u, s_ddot)
       end if
     end do
     !$omp end parallel do
