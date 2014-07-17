@@ -3,7 +3,7 @@
 function vortex_plot(filenumber,varargin)
 global dims box_size
 global x y z
-global f u u_mf v_curv
+global f u u_mf v_curv v_stretch
 global ux uy uz
 global number_of_particles
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -75,6 +75,14 @@ elseif strcmp(p.Results.LineColor,'curvature')
   rainbow_scale=199/max(v_curv) ;
   v_curv=v_curv*rainbow_scale;
   rainbow_val=v_curv;
+  rainbowcmap=colormap(jet(200)); 
+  rainbow=1;
+elseif strcmp(p.Results.LineColor,'stretch')
+  store_caxis=([min(v_stretch) max(v_stretch)]);
+  v_stretch=v_stretch-min(v_stretch);
+  rainbow_scale=199/max(v_stretch) ;
+  v_stretch=v_stretch*rainbow_scale;
+  rainbow_val=v_stretch;
   rainbowcmap=colormap(jet(200)); 
   rainbow=1;
 end

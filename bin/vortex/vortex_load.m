@@ -1,7 +1,7 @@
 function vortex_load(filenumber)
 global dims box_size
 global x y z
-global f u u_mf v_curv
+global f u u_mf v_curv v_stretch
 global number_of_particles
 global u_mf_x u_mf_y u_mf_z
 global ux uy uz
@@ -33,6 +33,7 @@ u_mf_x=fread(fid,number_of_particles,'float64');
 u_mf_y=fread(fid,number_of_particles,'float64');
 u_mf_z=fread(fid,number_of_particles,'float64');
 v_curv=fread(fid,number_of_particles,'float64');
+v_stretch=fread(fid,number_of_particles,'float64');
 fclose(fid);
 %now create arrays for u and u_mf
 u=sqrt(ux.^2+uy.^2+uz.^2);
